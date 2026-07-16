@@ -97,7 +97,9 @@ export function Hero() {
       >
         <div className="liquid-glass mx-auto flex max-w-5xl items-center justify-between rounded-full px-6 py-3">
           <div className="flex items-center">
-            <span className="text-lg font-semibold text-white">🏺 물레</span>
+            <span className="font-display text-lg text-white">
+              물레 <span className="text-white/40">MULLE</span>
+            </span>
             <div className="ml-8 hidden gap-8 md:flex">
               <a href="#about" className="text-sm font-medium text-white/80 transition-colors hover:text-white">소개</a>
               <a href="#how" className="text-sm font-medium text-white/80 transition-colors hover:text-white">작동 방식</a>

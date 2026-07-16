@@ -77,7 +77,7 @@ export function MulleWheel({
         );
       })}
       <text textAnchor="middle" dy={-4} fontSize={13} fontWeight="800" fill="#fff">
-        {current < n ? `${current + 1}번째 회차` : "완주 🎉"}
+        {current < n ? `${current + 1}번째 회차` : "완주"}
       </text>
       <text textAnchor="middle" dy={14} fontSize={9} fill="rgba(255,255,255,0.4)">
         {current < n ? "물레가 돌고 있어요" : "모두가 목돈을 탔어요"}

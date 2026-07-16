@@ -1,8 +1,8 @@
 "use client";
 import { use, useState } from "react";
-import Link from "next/link";
 import { useAccount, usePublicClient, useReadContracts, useWriteContract } from "wagmi";
 import { maxUint256 } from "viem";
+import { ArrowUpRight, Check, Copy } from "lucide-react";
 import {
   MOCKKRW_ADDRESS,
   explorerUrl,
@@ -11,11 +11,17 @@ import {
   mulleAbi,
   shortAddr,
 } from "@/lib/contracts";
-import { ConnectButton } from "@/components/ConnectButton";
+import { AppNav } from "@/components/AppNav";
 import { MulleWheel } from "@/components/MulleWheel";
 
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
-const STATE_LABEL = ["모집 중", "진행 중", "완주 🎉", "종료"];
+const STATE_LABEL = ["모집 중", "진행 중", "완주", "종료"];
+const STATE_CLS = [
+  "border-amber-400/30 text-amber-300",
+  "border-emerald-400/30 text-emerald-300",
+  "border-indigo-400/30 text-indigo-300",
+  "border-white/15 text-white/40",
+];
 
 export default function KyePage({ params }: { params: Promise<{ address: string }> }) {
   const { address: kyeAddr } = use(params);
@@ -89,7 +95,6 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
     }
   }
 
-  /** 필요 시 approve 먼저, 이어서 본 트랜잭션 */
   function approveThen(amount: bigint, name: string, fnName: "join" | "pay") {
     return run(name, async () => {
       const allowance = (await publicClient!.readContract({
@@ -113,9 +118,12 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
 
   if (!data)
     return (
-      <main className="flex min-h-screen items-center justify-center text-sm text-white/40">
-        불러오는 중…
-      </main>
+      <div className="min-h-screen bg-black">
+        <AppNav />
+        <main className="flex h-[60vh] items-center justify-center text-sm text-white/30">
+          불러오는 중
+        </main>
+      </div>
     );
 
   const full = members.length === maxMembers;
@@ -123,7 +131,9 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
   const roundEndTs = startTime + (round + 1) * roundDuration;
   const roundEnded = state === 1 && now >= roundEndTs;
   const isOrganizer = me && organizer && me.toLowerCase() === organizer.toLowerCase();
-  const btn = "pressable rounded-2xl p-4 font-bold disabled:opacity-50";
+  const primaryBtn =
+    "pressable h-12 w-full rounded-full text-sm font-semibold disabled:opacity-40";
+  const label = "text-xs uppercase tracking-[0.15em] text-white/35";
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
@@ -132,186 +142,258 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 pb-16">
-      <header className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2">
-          <Link href="/app" className="pressable text-xl text-white/70">←</Link>
-          <h1 className="text-xl font-black text-white">🏺 계모임</h1>
-        </div>
-        <ConnectButton />
-      </header>
+    <div className="min-h-screen bg-black">
+      <AppNav />
 
-      <div className="liquid-glass rounded-2xl p-4">
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-black text-white tabular-nums">
-            {fmtKRW(contribution)}
-            <span className="text-xs font-medium text-white/40"> / 회</span>
-          </span>
-          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-white/70">
-            {STATE_LABEL[state ?? 0]}
-          </span>
-        </div>
-        <div className="mt-1 text-xs text-white/40">
-          {members.length}/{maxMembers}명 · 곗돈 {fmtKRW(contribution * BigInt(maxMembers || 0))}
-          {deposit > 0n ? ` · 보증금 ${fmtKRW(deposit)}` : " · 보증금 없음"}
-        </div>
-        {state === 1 && (
-          <div className="mt-1 text-xs text-white/30">
-            이번 회차 마감: {new Date(roundEndTs * 1000).toLocaleString("ko-KR")}
+      <main className="mx-auto max-w-6xl px-6 pb-24">
+        {/* Page head */}
+        <div className="flex flex-col gap-4 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="mb-2 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/35">
+              계 상세
+              <span className={`rounded-full border px-2.5 py-0.5 normal-case tracking-normal ${STATE_CLS[state ?? 0]}`}>
+                {STATE_LABEL[state ?? 0]}
+              </span>
+            </p>
+            <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
+              {fmtKRW(contribution)}
+              <span className="ml-2 text-lg text-white/35">/ 회</span>
+            </h1>
           </div>
-        )}
-      </div>
-
-      {state === 1 && <MulleWheel order={order} current={round} me={me} />}
-      {state === 2 && <MulleWheel order={order} current={order.length} me={me} />}
-
-      {/* ---- 모집 중 ---- */}
-      {state === 0 && !isMember && me && !full && (
-        <button
-          disabled={!!busy}
-          className={`${btn} bg-white text-black`}
-          onClick={() => approveThen(deposit, "join", "join")}
-        >
-          {busy === "join"
-            ? "참여 중…"
-            : `이 계에 참여하기${deposit > 0n ? ` (보증금 ${fmtKRW(deposit)})` : ""}`}
-        </button>
-      )}
-      {state === 0 && !me && (
-        <p className="rounded-2xl border border-dashed border-white/15 p-4 text-center text-sm text-white/40">
-          지갑을 연결하면 이 계에 참여할 수 있어요
-        </p>
-      )}
-      {state === 0 && isMember && !full && (
-        <div className="liquid-glass rounded-2xl p-4 text-sm text-white">
-          ✅ 참여 완료! 친구에게 초대 링크를 공유하세요
-          <button
-            onClick={copyLink}
-            className="pressable mt-2 w-full rounded-xl bg-amber-400 py-2.5 text-sm font-bold text-black"
+          <a
+            href={explorerUrl(`address/${kye}`)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 self-start text-sm text-white/40 transition-colors hover:text-white md:self-auto"
           >
-            {copied ? "복사됨! 카톡에 붙여넣으세요" : "📋 초대 링크 복사"}
-          </button>
+            <span className="font-mono">{shortAddr(kye)}</span>
+            <ArrowUpRight size={14} />
+          </a>
         </div>
-      )}
-      {state === 0 && full && orderMode === 0 && (
-        <button
-          disabled={!!busy}
-          className={`${btn} bg-amber-400 text-black`}
-          onClick={() =>
-            run("start", () =>
-              writeContractAsync({ address: kye, abi: mulleAbi, functionName: "start" })
-            )
-          }
-        >
-          {busy === "start" ? "추첨 중…" : "🎲 제비뽑기로 순번 정하고 시작!"}
-        </button>
-      )}
-      {state === 0 && full && orderMode === 1 && isOrganizer && !orderProposed && (
-        <button
-          disabled={!!busy}
-          className={`${btn} bg-amber-400 text-black`}
-          onClick={() =>
-            run("propose", () =>
-              writeContractAsync({
-                address: kye,
-                abi: mulleAbi,
-                functionName: "proposeOrder",
-                args: [members as `0x${string}`[]],
-              })
-            )
-          }
-        >
-          {busy === "propose" ? "제안 중…" : "📝 순번 제안 (참여 순서대로)"}
-        </button>
-      )}
-      {state === 0 && orderProposed && (
-        <div className="liquid-glass rounded-2xl p-4 text-sm text-white">
-          제안된 순번에 {approvalCount}/{maxMembers}명 동의
-          {isMember && !iApproved && (
-            <button
-              disabled={!!busy}
-              className="pressable mt-2 w-full rounded-xl bg-amber-400 py-2.5 text-sm font-bold text-black disabled:opacity-50"
-              onClick={() =>
-                run("approve", () =>
-                  writeContractAsync({ address: kye, abi: mulleAbi, functionName: "approveOrder" })
-                )
-              }
-            >
-              {busy === "approve" ? "서명 중…" : "✍️ 순번에 동의 (지갑 서명)"}
-            </button>
-          )}
-        </div>
-      )}
 
-      {/* ---- 진행 중 ---- */}
-      {state === 1 && isMember && !iPaid && !roundEnded && (
-        <button
-          disabled={!!busy}
-          className={`${btn} bg-emerald-500 text-black`}
-          onClick={() => approveThen(contribution, "pay", "pay")}
-        >
-          {busy === "pay" ? "납입 중…" : `이번 회차 납입 (${fmtKRW(contribution)})`}
-        </button>
-      )}
-      {state === 1 && isMember && iPaid && !roundEnded && (
-        <div className="rounded-2xl bg-emerald-400/10 p-4 text-center text-sm font-bold text-emerald-300">
-          ✅ 이번 회차 납입 완료 — 물레가 도는 중
-        </div>
-      )}
-      {roundEnded && (
-        <button
-          disabled={!!busy}
-          className={`${btn} bg-amber-400 text-black`}
-          onClick={() =>
-            run("settle", () =>
-              writeContractAsync({ address: kye, abi: mulleAbi, functionName: "settle" })
-            )
-          }
-        >
-          {busy === "settle" ? "정산 중…" : "⚙️ 회차 정산 실행 (호출 보상 0.1%)"}
-        </button>
-      )}
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_400px]">
+          {/* Left: overview */}
+          <div className="flex flex-col gap-10">
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-4">
+              {[
+                { k: "인원", v: `${members.length} / ${maxMembers}` },
+                { k: "회차당 곗돈", v: fmtKRW(contribution * BigInt(maxMembers || 0)) },
+                { k: "보증금", v: deposit > 0n ? fmtKRW(deposit) : "없음" },
+                {
+                  k: "진행",
+                  v: state === 1 ? `${round + 1} / ${maxMembers}회차` : state === 2 ? "완료" : "—",
+                },
+              ].map((s) => (
+                <div key={s.k} className="bg-black p-5">
+                  <p className={label}>{s.k}</p>
+                  <p className="mt-2 text-lg font-medium text-white tabular-nums">{s.v}</p>
+                </div>
+              ))}
+            </div>
 
-      {/* ---- 수령 ---- */}
-      {claimable > 0n && (
-        <button
-          disabled={!!busy}
-          className={`${btn} bg-indigo-400 text-black`}
-          onClick={() =>
-            run("claim", () =>
-              writeContractAsync({ address: kye, abi: mulleAbi, functionName: "claim" })
-            )
-          }
-        >
-          {busy === "claim" ? "수령 중…" : `💰 ${fmtKRW(claimable)} 수령하기`}
-        </button>
-      )}
+            {(state === 1 || state === 2) && (
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.01] py-10">
+                <MulleWheel
+                  order={order}
+                  current={state === 2 ? order.length : round}
+                  me={me}
+                />
+                {state === 1 && (
+                  <p className="mt-4 text-center text-xs text-white/30">
+                    이번 회차 마감 — {new Date(roundEndTs * 1000).toLocaleString("ko-KR")}
+                  </p>
+                )}
+              </div>
+            )}
 
-      {error && <p className="rounded-xl bg-red-500/10 p-3 text-xs text-red-300">{error}</p>}
-
-      {/* ---- 멤버 ---- */}
-      <section className="liquid-glass rounded-2xl p-4">
-        <h2 className="mb-2 text-sm font-bold text-white/40">멤버</h2>
-        {members.map((m) => (
-          <div key={m} className="flex justify-between py-1 text-xs text-white/60">
-            <span className="font-mono">
-              {shortAddr(m)} {m.toLowerCase() === me?.toLowerCase() ? "· 나" : ""}
-            </span>
-            <span className="text-white/30">
-              {m.toLowerCase() === organizer?.toLowerCase() ? "개설자" : ""}
-            </span>
+            {/* Members */}
+            <section>
+              <h2 className={`${label} mb-4`}>멤버</h2>
+              <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
+                {members.map((m, i) => (
+                  <div
+                    key={m}
+                    className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 last:border-b-0"
+                  >
+                    <span className="flex items-center gap-3 font-mono text-sm text-white/70">
+                      <span className="text-xs text-white/25 tabular-nums">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      {shortAddr(m)}
+                      {m.toLowerCase() === me?.toLowerCase() && (
+                        <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-white/50">
+                          나
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-xs text-white/30">
+                      {m.toLowerCase() === organizer?.toLowerCase() ? "개설자" : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
-        ))}
-      </section>
 
-      <a
-        href={explorerUrl(`address/${kye}`)}
-        target="_blank"
-        rel="noreferrer"
-        className="text-center text-xs text-white/30 underline"
-      >
-        컨트랙트 온체인 기록 보기 ↗
-      </a>
-    </main>
+          {/* Right: actions */}
+          <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24">
+            <p className={label}>액션</p>
+
+            {state === 0 && !me && (
+              <p className="rounded-xl border border-dashed border-white/15 p-5 text-center text-sm text-white/40">
+                지갑을 연결하면 이 계에 참여할 수 있습니다
+              </p>
+            )}
+
+            {state === 0 && !isMember && me && !full && (
+              <button
+                disabled={!!busy}
+                className={`${primaryBtn} bg-white text-black`}
+                onClick={() => approveThen(deposit, "join", "join")}
+              >
+                {busy === "join"
+                  ? "참여 처리 중"
+                  : deposit > 0n
+                    ? `참여하기 — 보증금 ${fmtKRW(deposit)}`
+                    : "참여하기"}
+              </button>
+            )}
+
+            {state === 0 && isMember && !full && (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm leading-relaxed text-white/50">
+                  참여 완료. 아래 링크를 공유해 남은 자리를 채우세요.
+                </p>
+                <button
+                  onClick={copyLink}
+                  className="pressable flex h-12 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-medium text-white transition-colors hover:border-white/30"
+                >
+                  {copied ? <Check size={15} /> : <Copy size={15} />}
+                  {copied ? "복사됨" : "초대 링크 복사"}
+                </button>
+              </div>
+            )}
+
+            {state === 0 && full && orderMode === 0 && (
+              <button
+                disabled={!!busy}
+                className={`${primaryBtn} bg-white text-black`}
+                onClick={() =>
+                  run("start", () =>
+                    writeContractAsync({ address: kye, abi: mulleAbi, functionName: "start" })
+                  )
+                }
+              >
+                {busy === "start" ? "추첨 중" : "온체인 추첨으로 시작"}
+              </button>
+            )}
+
+            {state === 0 && full && orderMode === 1 && isOrganizer && !orderProposed && (
+              <button
+                disabled={!!busy}
+                className={`${primaryBtn} bg-white text-black`}
+                onClick={() =>
+                  run("propose", () =>
+                    writeContractAsync({
+                      address: kye,
+                      abi: mulleAbi,
+                      functionName: "proposeOrder",
+                      args: [members as `0x${string}`[]],
+                    })
+                  )
+                }
+              >
+                {busy === "propose" ? "제안 중" : "순번 제안 — 참여 순서대로"}
+              </button>
+            )}
+
+            {state === 0 && orderProposed && (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-white/50">
+                  제안된 순번에{" "}
+                  <span className="text-white tabular-nums">
+                    {approvalCount}/{maxMembers}
+                  </span>
+                  명 동의
+                </p>
+                {isMember && !iApproved && (
+                  <button
+                    disabled={!!busy}
+                    className={`${primaryBtn} bg-white text-black`}
+                    onClick={() =>
+                      run("approve", () =>
+                        writeContractAsync({
+                          address: kye,
+                          abi: mulleAbi,
+                          functionName: "approveOrder",
+                        })
+                      )
+                    }
+                  >
+                    {busy === "approve" ? "서명 중" : "순번에 동의 — 지갑 서명"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {state === 1 && isMember && !iPaid && !roundEnded && (
+              <button
+                disabled={!!busy}
+                className={`${primaryBtn} bg-emerald-400 text-black`}
+                onClick={() => approveThen(contribution, "pay", "pay")}
+              >
+                {busy === "pay" ? "납입 중" : `이번 회차 납입 — ${fmtKRW(contribution)}`}
+              </button>
+            )}
+
+            {state === 1 && isMember && iPaid && !roundEnded && (
+              <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-center text-sm text-emerald-300">
+                이번 회차 납입 완료
+              </p>
+            )}
+
+            {roundEnded && (
+              <button
+                disabled={!!busy}
+                className={`${primaryBtn} border border-white/15 text-white hover:border-white/30`}
+                onClick={() =>
+                  run("settle", () =>
+                    writeContractAsync({ address: kye, abi: mulleAbi, functionName: "settle" })
+                  )
+                }
+              >
+                {busy === "settle" ? "정산 중" : "회차 정산 실행 — 호출 보상 0.1%"}
+              </button>
+            )}
+
+            {claimable > 0n && (
+              <button
+                disabled={!!busy}
+                className={`${primaryBtn} bg-white text-black`}
+                onClick={() =>
+                  run("claim", () =>
+                    writeContractAsync({ address: kye, abi: mulleAbi, functionName: "claim" })
+                  )
+                }
+              >
+                {busy === "claim" ? "수령 중" : `${fmtKRW(claimable)} 수령`}
+              </button>
+            )}
+
+            {state === 2 && claimable === 0n && (
+              <p className="rounded-xl border border-indigo-400/20 bg-indigo-400/5 p-4 text-center text-sm text-indigo-300">
+                완주한 계입니다. 모든 정산이 끝났습니다.
+              </p>
+            )}
+
+            {error && (
+              <p className="rounded-xl border border-red-400/20 bg-red-400/5 p-4 text-xs text-red-300">
+                {error}
+              </p>
+            )}
+          </aside>
+        </div>
+      </main>
+    </div>
   );
 }

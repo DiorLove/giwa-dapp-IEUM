@@ -1,14 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { usePublicClient, useWriteContract } from "wagmi";
 import { parseUnits, decodeEventLog } from "viem";
 import { FACTORY_ADDRESS, factoryAbi } from "@/lib/contracts";
-import { ConnectButton } from "@/components/ConnectButton";
+import { AppNav } from "@/components/AppNav";
 
 const ROUND_OPTIONS = [
-  { label: "10분 (데모)", value: 600 },
+  { label: "10분 — 데모용", value: 600 },
   { label: "1일", value: 86400 },
   { label: "1주", value: 604800 },
   { label: "1개월 (30일)", value: 2592000 },
@@ -61,101 +60,141 @@ export default function CreatePage() {
     }
   }
 
-  const field = "flex flex-col gap-1.5 text-sm font-bold text-white/80";
+  const pot = Number(amount || 0) * members;
+  const depositAmt = Number(amount || 0) * depositRounds;
+  const label = "text-xs uppercase tracking-[0.15em] text-white/35";
   const input =
-    "liquid-glass rounded-xl p-3 font-medium text-white [color-scheme:dark] outline-none focus:ring-1 focus:ring-white/30";
+    "h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition-colors [color-scheme:dark] focus:border-white/30";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 p-4 pb-16">
-      <header className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2">
-          <Link href="/app" className="pressable text-xl text-white/70">←</Link>
-          <h1 className="text-xl font-black text-white">새 계모임 열기</h1>
+    <div className="min-h-screen bg-black">
+      <AppNav />
+
+      <main className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="pt-12 pb-10">
+          <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">New</p>
+          <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
+            새 계모임 개설
+          </h1>
         </div>
-        <ConnectButton />
-      </header>
 
-      <label className={field}>
-        인원 — {members}명
-        <input
-          type="range" min={3} max={12} value={members}
-          onChange={(e) => setMembers(Number(e.target.value))}
-          className="accent-white"
-        />
-        <span className="text-xs font-normal text-white/35">
-          {members}회차 동안 돌아가며 한 명씩 곗돈을 탑니다
-        </span>
-      </label>
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
+          {/* Form */}
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-3">
+              <span className={label}>인원 · {members}명</span>
+              <input
+                type="range" min={3} max={12} value={members}
+                onChange={(e) => setMembers(Number(e.target.value))}
+                className="accent-white"
+              />
+              <span className="text-xs text-white/30">
+                {members}회차 동안 매 회차 한 명씩 곗돈을 받습니다
+              </span>
+            </div>
 
-      <label className={field}>
-        회당 납입액 (mKRW)
-        <input
-          type="number" inputMode="numeric" value={amount}
-          onChange={(e) => setAmount(e.target.value)} className={input}
-        />
-        <span className="text-xs font-normal text-white/35">
-          곗돈 = {(Number(amount || 0) * members).toLocaleString("ko-KR")}원
-        </span>
-      </label>
+            <div className="flex flex-col gap-3">
+              <span className={label}>회당 납입액 (mKRW)</span>
+              <input
+                type="number" inputMode="numeric" value={amount}
+                onChange={(e) => setAmount(e.target.value)} className={input}
+              />
+            </div>
 
-      <label className={field}>
-        납입 주기
-        <select value={round} onChange={(e) => setRound(Number(e.target.value))} className={input}>
-          {ROUND_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value} className="bg-stone-900">
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="flex flex-col gap-3">
+                <span className={label}>납입 주기</span>
+                <select
+                  value={round}
+                  onChange={(e) => setRound(Number(e.target.value))}
+                  className={input}
+                >
+                  {ROUND_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value} className="bg-neutral-900">
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-3">
+                <span className={label}>보증금</span>
+                <select
+                  value={depositRounds}
+                  onChange={(e) => setDepositRounds(Number(e.target.value))}
+                  className={input}
+                >
+                  <option value={0} className="bg-neutral-900">없음</option>
+                  <option value={1} className="bg-neutral-900">납입액 1회분</option>
+                  <option value={2} className="bg-neutral-900">납입액 2회분</option>
+                </select>
+              </div>
+            </div>
 
-      <label className={field}>
-        보증금 <span className="font-normal text-white/35">(미납 시 여기서 자동 차감)</span>
-        <select
-          value={depositRounds}
-          onChange={(e) => setDepositRounds(Number(e.target.value))}
-          className={input}
-        >
-          <option value={0} className="bg-stone-900">없음 (믿는 지인끼리)</option>
-          <option value={1} className="bg-stone-900">납입액 1회분</option>
-          <option value={2} className="bg-stone-900">납입액 2회분</option>
-        </select>
-      </label>
+            <div className="flex flex-col gap-3">
+              <span className={label}>순번 결정 방식</span>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {[
+                  { title: "온체인 추첨", desc: "블록 해시 기반 무작위 배정. 누구도 조작할 수 없습니다." },
+                  { title: "계주 지정", desc: "개설자가 순번을 제안하고 전원이 지갑 서명으로 동의합니다." },
+                ].map((opt, i) => (
+                  <button
+                    key={opt.title}
+                    onClick={() => setOrderMode(i)}
+                    className={`pressable rounded-xl border p-5 text-left transition-colors ${
+                      orderMode === i
+                        ? "border-white/40 bg-white/[0.06]"
+                        : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-white">{opt.title}</p>
+                    <p className="mt-1.5 text-xs leading-relaxed text-white/40">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-      <div className={field}>
-        순번 정하기
-        <div className="flex gap-2">
-          {["🎲 온체인 제비뽑기", "📝 계주 지정 + 전원 동의"].map((label, i) => (
+            {error && (
+              <p className="rounded-xl border border-red-400/20 bg-red-400/5 p-4 text-xs text-red-300">
+                {error}
+              </p>
+            )}
+          </div>
+
+          {/* Summary panel */}
+          <aside className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24">
+            <p className={label}>요약</p>
+            <dl className="mt-6 flex flex-col gap-4 border-b border-white/[0.06] pb-6">
+              <div className="flex items-baseline justify-between">
+                <dt className="text-sm text-white/40">회차당 곗돈</dt>
+                <dd className="text-xl font-medium text-white tabular-nums">
+                  ₩{pot.toLocaleString("ko-KR")}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <dt className="text-sm text-white/40">참여 시 보증금</dt>
+                <dd className="text-sm text-white/70 tabular-nums">
+                  {depositRounds === 0 ? "없음" : `₩${depositAmt.toLocaleString("ko-KR")}`}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <dt className="text-sm text-white/40">총 회차</dt>
+                <dd className="text-sm text-white/70 tabular-nums">{members}회</dd>
+              </div>
+            </dl>
             <button
-              key={i}
-              onClick={() => setOrderMode(i)}
-              className={`pressable flex-1 rounded-xl p-3 text-xs font-bold transition-colors ${
-                orderMode === i
-                  ? "bg-white text-black"
-                  : "liquid-glass glass-hover text-white/60"
-              }`}
+              onClick={create}
+              disabled={busy || Number(amount) <= 0}
+              className="pressable mt-6 h-12 w-full rounded-full bg-white text-sm font-semibold text-black disabled:opacity-40"
             >
-              {label}
+              {busy ? "개설 중" : "계모임 개설"}
             </button>
-          ))}
+            <p className="mt-4 text-xs leading-relaxed text-white/30">
+              개설 후에도 계주는 자금에 접근할 수 없습니다. 모든 보관과 지급은
+              스마트 컨트랙트가 수행합니다.
+            </p>
+          </aside>
         </div>
-      </div>
-
-      {error && (
-        <p className="rounded-xl bg-red-500/10 p-3 text-xs text-red-300">{error}</p>
-      )}
-
-      <button
-        onClick={create}
-        disabled={busy || Number(amount) <= 0}
-        className="pressable rounded-2xl bg-white p-4 font-bold text-black disabled:opacity-50"
-      >
-        {busy ? "개설 중…" : "계모임 개설"}
-      </button>
-      <p className="text-center text-[11px] leading-relaxed text-white/30">
-        개설 후에도 계주는 돈에 손댈 수 없어요.
-        <br />모든 보관·지급은 스마트 컨트랙트가 합니다.
-      </p>
-    </main>
+      </main>
+    </div>
   );
 }
