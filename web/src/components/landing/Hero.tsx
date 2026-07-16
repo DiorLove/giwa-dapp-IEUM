@@ -1,8 +1,25 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { ArrowRight, Code2, AtSign, Globe } from "lucide-react";
 import { explorerUrl } from "@/lib/contracts";
+
+const EASE = [0.23, 1, 0.32, 1] as const;
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+};
+const riseBlur = {
+  hidden: { opacity: 0, y: 28, filter: "blur(8px)" },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.9, ease: EASE },
+  },
+};
 
 const HERO_VIDEO =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_074625_a81f018a-956b-43fb-9aee-4d1508e30e6a.mp4";
@@ -72,7 +89,12 @@ export function Hero() {
       <div className="absolute inset-0 bg-black/30" />
 
       {/* Navbar */}
-      <nav className="relative z-20 px-6 py-6">
+      <motion.nav
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: EASE }}
+        className="relative z-20 px-6 py-6"
+      >
         <div className="liquid-glass mx-auto flex max-w-5xl items-center justify-between rounded-full px-6 py-3">
           <div className="flex items-center">
             <span className="text-lg font-semibold text-white">🏺 물레</span>
@@ -99,24 +121,43 @@ export function Hero() {
             </Link>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Hero content */}
-      <div className="relative z-10 flex flex-1 -translate-y-[12%] flex-col items-center justify-center gap-8 px-6 py-12 text-center">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 flex flex-1 -translate-y-[12%] flex-col items-center justify-center gap-8 px-6 py-12 text-center"
+      >
         <h1 className="font-display text-6xl tracking-tight text-white md:text-8xl lg:text-9xl">
-          돌려라, <em className="italic">목돈</em>이 온다
+          <motion.span variants={riseBlur} className="inline-block">
+            돌려라,
+          </motion.span>{" "}
+          <motion.span variants={riseBlur} className="inline-block">
+            <em className="italic">목돈</em>이
+          </motion.span>{" "}
+          <motion.span variants={riseBlur} className="inline-block">
+            온다
+          </motion.span>
         </h1>
-        <p className="max-w-md text-sm leading-relaxed text-white/80 md:text-base">
+        <motion.p
+          variants={riseBlur}
+          className="max-w-md text-sm leading-relaxed text-white/80 md:text-base"
+        >
           800년을 이어온 한국의 저축 문화 &lsquo;계&rsquo;를 GIWA 체인 위에 다시
           지었습니다. 계주 없이, 장부 없이 — 신뢰는 스마트 컨트랙트가 대신합니다.
-        </p>
-        <div className="flex w-full max-w-xl flex-col items-center gap-3 sm:flex-row sm:justify-center">
+        </motion.p>
+        <motion.div
+          variants={riseBlur}
+          className="flex w-full max-w-xl flex-col items-center gap-3 sm:flex-row sm:justify-center"
+        >
           <Link
             href="/app"
-            className="pressable flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-black"
+            className="cta pressable flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-black"
           >
             내 첫 계모임 열기
-            <ArrowRight size={18} />
+            <ArrowRight size={18} className="cta-arrow" />
           </Link>
           <a
             href={explorerUrl("address/0x9409Ec65128f5Dd9686F6e739f1520170F87D85A")}
@@ -126,11 +167,16 @@ export function Hero() {
           >
             완주한 계, 온체인으로 보기
           </a>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Socials */}
-      <div className="relative z-10 flex justify-center gap-4 pb-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.7, ease: EASE }}
+        className="relative z-10 flex justify-center gap-4 pb-12"
+      >
         {[
           { Icon: Code2, href: "https://github.com", label: "GitHub" },
           { Icon: AtSign, href: "https://x.com", label: "X" },
@@ -147,7 +193,7 @@ export function Hero() {
             <Icon size={20} />
           </a>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }

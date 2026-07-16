@@ -84,6 +84,63 @@ body {
   animation: rise-in 300ms var(--ease-out-strong) forwards;
 }
 
+/* ---- 마퀴 (무한 스크롤 스트립) ---- */
+@keyframes marquee-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-x 32s linear infinite;
+}
+
+/* ---- 물레 휠 장식 회전/펄스 ---- */
+@keyframes slow-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.wheel-ring {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: slow-spin 40s linear infinite;
+}
+
+@keyframes node-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+.wheel-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: node-pulse 2s var(--ease-in-out-strong) infinite;
+}
+
+/* ---- CTA 화살표 슬라이드 ---- */
+.cta-arrow {
+  transition: transform 200ms var(--ease-out-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cta:hover .cta-arrow {
+    transform: translateX(4px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stagger-item {
     transform: none;
@@ -91,5 +148,10 @@ body {
   }
   .pressable:active {
     transform: none;
+  }
+  .marquee-track,
+  .wheel-ring,
+  .wheel-pulse {
+    animation: none;
   }
 }

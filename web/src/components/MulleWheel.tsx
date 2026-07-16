@@ -16,11 +16,24 @@ export function MulleWheel({
   return (
     <svg viewBox="-110 -110 220 220" className="mx-auto w-60">
       <circle
+        className="wheel-ring"
         r={R}
         fill="none"
         stroke="rgba(255,255,255,0.15)"
         strokeWidth={2}
         strokeDasharray="4 4"
+      />
+      {/* 진행률 아크 */}
+      <circle
+        r={R}
+        fill="none"
+        stroke="#f59e0b"
+        strokeOpacity={0.5}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeDasharray={`${(Math.min(current, n) / n) * 2 * Math.PI * R} ${2 * Math.PI * R}`}
+        transform="rotate(-90)"
+        style={{ transition: "stroke-dasharray 700ms cubic-bezier(0.77, 0, 0.175, 1)" }}
       />
       {order.map((addr, i) => {
         const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
@@ -31,6 +44,9 @@ export function MulleWheel({
         const done = i < current;
         return (
           <g key={addr} transform={`translate(${x},${y})`}>
+            {isCurrent && (
+              <circle className="wheel-pulse" r={18} fill="none" stroke="#f59e0b" strokeWidth={2} />
+            )}
             <circle
               r={isCurrent ? 18 : 14}
               fill={
