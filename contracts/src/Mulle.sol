@@ -100,6 +100,70 @@ contract Mulle {
         emit RecruitmentCancelled();
     }
 
+    // ---------- 시작 ----------
+
+    /// Random 모드: 정원이 차면 누구나 호출 → 온체인 제비뽑기로 순번 확정
+    function start() external {
+        require(state == State.Recruiting, "not recruiting");
+        require(orderMode == OrderMode.Random, "assigned mode");
+        require(members.length == maxMembers, "not full");
+        address[] memory order = members;
+        uint256 seed = uint256(keccak256(abi.encode(blockhash(block.number - 1), address(this))));
+        for (uint256 i = order.length - 1; i > 0; i--) {
+            uint256 j = seed % (i + 1);
+            (order[i], order[j]) = (order[j], order[i]);
+            seed = uint256(keccak256(abi.encode(seed, i)));
+        }
+        for (uint256 i = 0; i < order.length; i++) {
+            payoutOrder.push(order[i]);
+        }
+        _activate();
+    }
+
+    /// Assigned 모드: 계주가 순번 제안 (재제안 시 동의 리셋)
+    function proposeOrder(address[] calldata order) external {
+        require(state == State.Recruiting, "not recruiting");
+        require(orderMode == OrderMode.Assigned, "random mode");
+        require(msg.sender == organizer, "not organizer");
+        require(members.length == maxMembers, "not full");
+        require(order.length == maxMembers, "bad length");
+        for (uint256 i = 0; i < order.length; i++) {
+            require(isMember[order[i]], "not member");
+            for (uint256 j = i + 1; j < order.length; j++) {
+                require(order[i] != order[j], "duplicate");
+            }
+        }
+        for (uint256 i = 0; i < members.length; i++) {
+            orderApproved[members[i]] = false;
+        }
+        approvalCount = 0;
+        delete payoutOrder;
+        for (uint256 i = 0; i < order.length; i++) {
+            payoutOrder.push(order[i]);
+        }
+        orderProposed = true;
+        emit OrderProposed(order);
+    }
+
+    /// Assigned 모드: 멤버 전원 동의 시 자동 시작
+    function approveOrder() external {
+        require(state == State.Recruiting && orderProposed, "no proposal");
+        require(isMember[msg.sender], "not member");
+        require(!orderApproved[msg.sender], "already approved");
+        orderApproved[msg.sender] = true;
+        approvalCount++;
+        emit OrderApproved(msg.sender);
+        if (approvalCount == maxMembers) {
+            _activate();
+        }
+    }
+
+    function _activate() internal {
+        state = State.Active;
+        startTime = block.timestamp;
+        emit Started(payoutOrder);
+    }
+
     // ---------- 수령 (pull 방식) ----------
 
     function claim() external {
