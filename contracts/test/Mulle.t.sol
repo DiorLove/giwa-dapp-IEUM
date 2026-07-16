@@ -189,4 +189,94 @@ contract MulleTest is Test {
         assertEq(a.approvalCount(), 0);
         assertEq(a.getPayoutOrder()[0], org);
     }
+
+    // ---- Task 5: 납입/정산/완주 ----
+
+    function _startRandom() internal {
+        _joinAll();
+        vm.roll(block.number + 10);
+        mulle.start();
+    }
+
+    function _payAll() internal {
+        vm.prank(org); mulle.pay();
+        vm.prank(m2); mulle.pay();
+        vm.prank(m3); mulle.pay();
+    }
+
+    function test_PayPullsContribution() public {
+        _startRandom();
+        uint256 before = krw.balanceOf(org);
+        vm.prank(org); mulle.pay();
+        assertEq(before - krw.balanceOf(org), CONTRIBUTION);
+        assertTrue(mulle.paidInRound(0, org));
+        assertEq(mulle.totalPaid(org), CONTRIBUTION);
+    }
+
+    function test_CannotPayTwiceInRound() public {
+        _startRandom();
+        vm.startPrank(org);
+        mulle.pay();
+        vm.expectRevert(bytes("already paid"));
+        mulle.pay();
+        vm.stopPrank();
+    }
+
+    function test_SettlePaysRecipientMinusReward() public {
+        _startRandom();
+        _payAll();
+        vm.warp(mulle.roundEnd(0));
+        address recipient = mulle.getPayoutOrder()[0];
+
+        vm.prank(outsider);
+        mulle.settle();
+
+        uint256 pot = CONTRIBUTION * 3;
+        uint256 reward = (pot * 10) / 10000; // 0.1%
+        assertEq(mulle.claimable(recipient), pot - reward);
+        assertEq(mulle.claimable(outsider), reward);
+        assertTrue(mulle.hasReceived(recipient));
+        assertEq(mulle.currentRound(), 1);
+    }
+
+    function test_CannotSettleBeforeRoundEnd() public {
+        _startRandom();
+        _payAll();
+        vm.expectRevert(bytes("round not ended"));
+        mulle.settle();
+    }
+
+    function test_FullCycleCompletesAndReturnsDeposits() public {
+        _startRandom();
+        for (uint256 r = 0; r < 3; r++) {
+            _payAll();
+            vm.warp(mulle.roundEnd(r));
+            mulle.settle();
+        }
+        assertEq(uint8(mulle.state()), uint8(Mulle.State.Completed));
+        // 완주 시 보증금은 claimable로 반환
+        assertEq(mulle.depositBalance(org), 0);
+
+        // 전원 claim 후 컨트랙트 잔액 = 0 (settle 보상 수령 포함)
+        address[4] memory all = [org, m2, m3, address(this)];
+        for (uint256 i = 0; i < 4; i++) {
+            if (mulle.claimable(all[i]) > 0) {
+                vm.prank(all[i]);
+                mulle.claim();
+            }
+        }
+        assertEq(krw.balanceOf(address(mulle)), 0);
+    }
+
+    function test_EveryMemberReceivesExactlyOnce() public {
+        _startRandom();
+        for (uint256 r = 0; r < 3; r++) {
+            _payAll();
+            vm.warp(mulle.roundEnd(r));
+            mulle.settle();
+        }
+        assertTrue(mulle.hasReceived(org));
+        assertTrue(mulle.hasReceived(m2));
+        assertTrue(mulle.hasReceived(m3));
+    }
 }

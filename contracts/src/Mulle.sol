@@ -164,6 +164,84 @@ contract Mulle {
         emit Started(payoutOrder);
     }
 
+    // ---------- 진행 ----------
+
+    function pay() external {
+        require(state == State.Active, "not active");
+        require(isMember[msg.sender], "not member");
+        require(block.timestamp < roundEnd(currentRound), "round ended");
+        require(!paidInRound[currentRound][msg.sender], "already paid");
+        paidInRound[currentRound][msg.sender] = true;
+        totalPaid[msg.sender] += contribution;
+        token.safeTransferFrom(msg.sender, address(this), contribution);
+        emit Paid(currentRound, msg.sender);
+    }
+
+    /// 회차 마감 후 누구나 호출 가능. 미납분은 보증금에서 차감,
+    /// 보증금으로 못 메꾸면 자동 파탄. 호출자에게 곗돈의 0.1% 보상.
+    function settle() external {
+        require(state == State.Active, "not active");
+        require(block.timestamp >= roundEnd(currentRound), "round not ended");
+        uint256 round = currentRound;
+
+        for (uint256 i = 0; i < members.length; i++) {
+            address m = members[i];
+            if (!paidInRound[round][m]) {
+                if (depositBalance[m] >= contribution) {
+                    depositBalance[m] -= contribution;
+                    totalPaid[m] += contribution;
+                    paidInRound[round][m] = true;
+                } else {
+                    _break();
+                    return;
+                }
+            }
+        }
+
+        uint256 pot = contribution * maxMembers;
+        uint256 reward = (pot * SETTLE_REWARD_BPS) / 10000;
+        address recipient = payoutOrder[round];
+        claimable[recipient] += pot - reward;
+        claimable[msg.sender] += reward;
+        totalClaimable += pot;
+        hasReceived[recipient] = true;
+        emit Settled(round, recipient, pot - reward);
+
+        currentRound = round + 1;
+        if (currentRound == maxMembers) {
+            state = State.Completed;
+            _refundAllDeposits();
+            emit Completed();
+        }
+    }
+
+    /// 파탄 정산: 전원 잔여 보증금 반환 후, 남은 잔액을
+    /// 미수령 멤버에게 각자 총 납입액 비례로 분배.
+    function _break() internal {
+        state = State.Broken;
+        _refundAllDeposits();
+
+        uint256 unreceivedPaidSum = 0;
+        for (uint256 i = 0; i < members.length; i++) {
+            address m = members[i];
+            if (!hasReceived[m]) {
+                unreceivedPaidSum += totalPaid[m];
+            }
+        }
+        uint256 pool = token.balanceOf(address(this)) - totalClaimable;
+        if (pool > 0 && unreceivedPaidSum > 0) {
+            for (uint256 i = 0; i < members.length; i++) {
+                address m = members[i];
+                if (!hasReceived[m] && totalPaid[m] > 0) {
+                    uint256 share = (pool * totalPaid[m]) / unreceivedPaidSum;
+                    claimable[m] += share;
+                    totalClaimable += share;
+                }
+            }
+        }
+        emit Broke();
+    }
+
     // ---------- 수령 (pull 방식) ----------
 
     function claim() external {
