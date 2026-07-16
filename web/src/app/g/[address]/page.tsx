@@ -113,7 +113,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
 
   if (!data)
     return (
-      <main className="flex min-h-screen items-center justify-center text-sm text-stone-400">
+      <main className="flex min-h-screen items-center justify-center text-sm text-white/40">
         불러오는 중…
       </main>
     );
@@ -123,8 +123,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
   const roundEndTs = startTime + (round + 1) * roundDuration;
   const roundEnded = state === 1 && now >= roundEndTs;
   const isOrganizer = me && organizer && me.toLowerCase() === organizer.toLowerCase();
-  const btn =
-    "rounded-2xl p-4 font-bold text-white shadow-md transition active:scale-[0.98] disabled:opacity-50";
+  const btn = "pressable rounded-2xl p-4 font-bold disabled:opacity-50";
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
@@ -133,31 +132,31 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
   }
 
   return (
-    <main className="flex flex-col gap-4 p-4 pb-16">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4 pb-16">
       <header className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
-          <Link href="/" className="text-xl">←</Link>
-          <h1 className="text-xl font-black">🏺 계모임</h1>
+          <Link href="/app" className="pressable text-xl text-white/70">←</Link>
+          <h1 className="text-xl font-black text-white">🏺 계모임</h1>
         </div>
         <ConnectButton />
       </header>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      <div className="liquid-glass rounded-2xl p-4">
         <div className="flex items-center justify-between">
-          <span className="text-2xl font-black tabular-nums">
+          <span className="text-2xl font-black text-white tabular-nums">
             {fmtKRW(contribution)}
-            <span className="text-xs font-medium text-stone-400"> / 회</span>
+            <span className="text-xs font-medium text-white/40"> / 회</span>
           </span>
-          <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-600">
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-white/70">
             {STATE_LABEL[state ?? 0]}
           </span>
         </div>
-        <div className="mt-1 text-xs text-stone-500">
+        <div className="mt-1 text-xs text-white/40">
           {members.length}/{maxMembers}명 · 곗돈 {fmtKRW(contribution * BigInt(maxMembers || 0))}
           {deposit > 0n ? ` · 보증금 ${fmtKRW(deposit)}` : " · 보증금 없음"}
         </div>
         {state === 1 && (
-          <div className="mt-1 text-xs text-stone-400">
+          <div className="mt-1 text-xs text-white/30">
             이번 회차 마감: {new Date(roundEndTs * 1000).toLocaleString("ko-KR")}
           </div>
         )}
@@ -170,7 +169,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
       {state === 0 && !isMember && me && !full && (
         <button
           disabled={!!busy}
-          className={`${btn} bg-stone-900`}
+          className={`${btn} bg-white text-black`}
           onClick={() => approveThen(deposit, "join", "join")}
         >
           {busy === "join"
@@ -179,16 +178,16 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
         </button>
       )}
       {state === 0 && !me && (
-        <p className="rounded-2xl border border-dashed border-stone-300 p-4 text-center text-sm text-stone-400">
+        <p className="rounded-2xl border border-dashed border-white/15 p-4 text-center text-sm text-white/40">
           지갑을 연결하면 이 계에 참여할 수 있어요
         </p>
       )}
       {state === 0 && isMember && !full && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 text-sm shadow-sm">
+        <div className="liquid-glass rounded-2xl p-4 text-sm text-white">
           ✅ 참여 완료! 친구에게 초대 링크를 공유하세요
           <button
             onClick={copyLink}
-            className="mt-2 w-full rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-white transition active:scale-[0.98]"
+            className="pressable mt-2 w-full rounded-xl bg-amber-400 py-2.5 text-sm font-bold text-black"
           >
             {copied ? "복사됨! 카톡에 붙여넣으세요" : "📋 초대 링크 복사"}
           </button>
@@ -197,7 +196,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
       {state === 0 && full && orderMode === 0 && (
         <button
           disabled={!!busy}
-          className={`${btn} bg-amber-500`}
+          className={`${btn} bg-amber-400 text-black`}
           onClick={() =>
             run("start", () =>
               writeContractAsync({ address: kye, abi: mulleAbi, functionName: "start" })
@@ -210,7 +209,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
       {state === 0 && full && orderMode === 1 && isOrganizer && !orderProposed && (
         <button
           disabled={!!busy}
-          className={`${btn} bg-amber-500`}
+          className={`${btn} bg-amber-400 text-black`}
           onClick={() =>
             run("propose", () =>
               writeContractAsync({
@@ -226,12 +225,12 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
         </button>
       )}
       {state === 0 && orderProposed && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 text-sm shadow-sm">
+        <div className="liquid-glass rounded-2xl p-4 text-sm text-white">
           제안된 순번에 {approvalCount}/{maxMembers}명 동의
           {isMember && !iApproved && (
             <button
               disabled={!!busy}
-              className="mt-2 w-full rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+              className="pressable mt-2 w-full rounded-xl bg-amber-400 py-2.5 text-sm font-bold text-black disabled:opacity-50"
               onClick={() =>
                 run("approve", () =>
                   writeContractAsync({ address: kye, abi: mulleAbi, functionName: "approveOrder" })
@@ -248,21 +247,21 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
       {state === 1 && isMember && !iPaid && !roundEnded && (
         <button
           disabled={!!busy}
-          className={`${btn} bg-emerald-600`}
+          className={`${btn} bg-emerald-500 text-black`}
           onClick={() => approveThen(contribution, "pay", "pay")}
         >
           {busy === "pay" ? "납입 중…" : `이번 회차 납입 (${fmtKRW(contribution)})`}
         </button>
       )}
       {state === 1 && isMember && iPaid && !roundEnded && (
-        <div className="rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-700">
+        <div className="rounded-2xl bg-emerald-400/10 p-4 text-center text-sm font-bold text-emerald-300">
           ✅ 이번 회차 납입 완료 — 물레가 도는 중
         </div>
       )}
       {roundEnded && (
         <button
           disabled={!!busy}
-          className={`${btn} bg-amber-500`}
+          className={`${btn} bg-amber-400 text-black`}
           onClick={() =>
             run("settle", () =>
               writeContractAsync({ address: kye, abi: mulleAbi, functionName: "settle" })
@@ -277,7 +276,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
       {claimable > 0n && (
         <button
           disabled={!!busy}
-          className={`${btn} bg-indigo-600`}
+          className={`${btn} bg-indigo-400 text-black`}
           onClick={() =>
             run("claim", () =>
               writeContractAsync({ address: kye, abi: mulleAbi, functionName: "claim" })
@@ -288,17 +287,17 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
         </button>
       )}
 
-      {error && <p className="rounded-xl bg-red-50 p-3 text-xs text-red-600">{error}</p>}
+      {error && <p className="rounded-xl bg-red-500/10 p-3 text-xs text-red-300">{error}</p>}
 
       {/* ---- 멤버 ---- */}
-      <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-stone-500">멤버</h2>
+      <section className="liquid-glass rounded-2xl p-4">
+        <h2 className="mb-2 text-sm font-bold text-white/40">멤버</h2>
         {members.map((m) => (
-          <div key={m} className="flex justify-between py-1 text-xs text-stone-600">
+          <div key={m} className="flex justify-between py-1 text-xs text-white/60">
             <span className="font-mono">
               {shortAddr(m)} {m.toLowerCase() === me?.toLowerCase() ? "· 나" : ""}
             </span>
-            <span className="text-stone-400">
+            <span className="text-white/30">
               {m.toLowerCase() === organizer?.toLowerCase() ? "개설자" : ""}
             </span>
           </div>
@@ -309,7 +308,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
         href={explorerUrl(`address/${kye}`)}
         target="_blank"
         rel="noreferrer"
-        className="text-center text-xs text-stone-400 underline"
+        className="text-center text-xs text-white/30 underline"
       >
         컨트랙트 온체인 기록 보기 ↗
       </a>

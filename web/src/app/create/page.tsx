@@ -53,7 +53,7 @@ export default function CreatePage() {
           }
         } catch {}
       }
-      router.push("/");
+      router.push("/app");
     } catch (e) {
       setError(e instanceof Error ? e.message.split("\n")[0] : "트랜잭션 실패");
     } finally {
@@ -61,15 +61,16 @@ export default function CreatePage() {
     }
   }
 
-  const field = "flex flex-col gap-1.5 text-sm font-bold text-stone-700";
-  const input = "rounded-xl border border-stone-300 bg-white p-3 font-medium";
+  const field = "flex flex-col gap-1.5 text-sm font-bold text-white/80";
+  const input =
+    "liquid-glass rounded-xl p-3 font-medium text-white [color-scheme:dark] outline-none focus:ring-1 focus:ring-white/30";
 
   return (
-    <main className="flex flex-col gap-5 p-4 pb-16">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 p-4 pb-16">
       <header className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
-          <Link href="/" className="text-xl">←</Link>
-          <h1 className="text-xl font-black">새 계모임 열기</h1>
+          <Link href="/app" className="pressable text-xl text-white/70">←</Link>
+          <h1 className="text-xl font-black text-white">새 계모임 열기</h1>
         </div>
         <ConnectButton />
       </header>
@@ -79,9 +80,9 @@ export default function CreatePage() {
         <input
           type="range" min={3} max={12} value={members}
           onChange={(e) => setMembers(Number(e.target.value))}
-          className="accent-stone-900"
+          className="accent-white"
         />
-        <span className="text-xs font-normal text-stone-400">
+        <span className="text-xs font-normal text-white/35">
           {members}회차 동안 돌아가며 한 명씩 곗돈을 탑니다
         </span>
       </label>
@@ -92,7 +93,7 @@ export default function CreatePage() {
           type="number" inputMode="numeric" value={amount}
           onChange={(e) => setAmount(e.target.value)} className={input}
         />
-        <span className="text-xs font-normal text-stone-400">
+        <span className="text-xs font-normal text-white/35">
           곗돈 = {(Number(amount || 0) * members).toLocaleString("ko-KR")}원
         </span>
       </label>
@@ -101,21 +102,23 @@ export default function CreatePage() {
         납입 주기
         <select value={round} onChange={(e) => setRound(Number(e.target.value))} className={input}>
           {ROUND_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+            <option key={o.value} value={o.value} className="bg-stone-900">
+              {o.label}
+            </option>
           ))}
         </select>
       </label>
 
       <label className={field}>
-        보증금 <span className="font-normal text-stone-400">(미납 시 여기서 자동 차감)</span>
+        보증금 <span className="font-normal text-white/35">(미납 시 여기서 자동 차감)</span>
         <select
           value={depositRounds}
           onChange={(e) => setDepositRounds(Number(e.target.value))}
           className={input}
         >
-          <option value={0}>없음 (믿는 지인끼리)</option>
-          <option value={1}>납입액 1회분</option>
-          <option value={2}>납입액 2회분</option>
+          <option value={0} className="bg-stone-900">없음 (믿는 지인끼리)</option>
+          <option value={1} className="bg-stone-900">납입액 1회분</option>
+          <option value={2} className="bg-stone-900">납입액 2회분</option>
         </select>
       </label>
 
@@ -126,10 +129,10 @@ export default function CreatePage() {
             <button
               key={i}
               onClick={() => setOrderMode(i)}
-              className={`flex-1 rounded-xl border p-3 text-xs font-bold transition ${
+              className={`pressable flex-1 rounded-xl p-3 text-xs font-bold transition-colors ${
                 orderMode === i
-                  ? "border-stone-900 bg-stone-900 text-white"
-                  : "border-stone-300 bg-white text-stone-600"
+                  ? "bg-white text-black"
+                  : "liquid-glass glass-hover text-white/60"
               }`}
             >
               {label}
@@ -139,17 +142,17 @@ export default function CreatePage() {
       </div>
 
       {error && (
-        <p className="rounded-xl bg-red-50 p-3 text-xs text-red-600">{error}</p>
+        <p className="rounded-xl bg-red-500/10 p-3 text-xs text-red-300">{error}</p>
       )}
 
       <button
         onClick={create}
         disabled={busy || Number(amount) <= 0}
-        className="rounded-2xl bg-stone-900 p-4 font-bold text-white shadow-md transition active:scale-[0.98] disabled:opacity-50"
+        className="pressable rounded-2xl bg-white p-4 font-bold text-black disabled:opacity-50"
       >
         {busy ? "개설 중…" : "계모임 개설"}
       </button>
-      <p className="text-center text-[11px] leading-relaxed text-stone-400">
+      <p className="text-center text-[11px] leading-relaxed text-white/30">
         개설 후에도 계주는 돈에 손댈 수 없어요.
         <br />모든 보관·지급은 스마트 컨트랙트가 합니다.
       </p>

@@ -7,7 +7,11 @@ export const metadata: Metadata = {
   description: "계주는 컨트랙트, 신뢰는 체인에. 돌려라, 목돈이 온다.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#000000",
+};
 
 export default function RootLayout({
   children,
@@ -16,10 +20,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="min-h-full bg-stone-100 text-stone-900">
-        <div className="mx-auto min-h-screen max-w-md bg-stone-50 shadow-xl">
-          <Providers>{children}</Providers>
-        </div>
+      <body className="min-h-full bg-black text-white">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

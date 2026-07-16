@@ -1,13 +1,95 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Noto+Serif+KR:wght@400;500&display=swap");
 @import "tailwindcss";
 
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --font-serif-display: "Instrument Serif", "Noto Serif KR", serif;
+}
+
 body {
+  background: #000;
+  color: #fff;
   font-family:
     "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
 
-@keyframes mulle-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.font-display {
+  font-family: var(--font-serif-display);
+  font-weight: 400;
+}
+
+/* ---- Liquid Glass ---- */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ---- Pressable: 모든 버튼/링크 공통 프레스 피드백 ---- */
+.pressable {
+  transition: transform 160ms var(--ease-out-strong);
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glass-hover {
+    transition: background-color 200ms ease;
+  }
+  .glass-hover:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* ---- 리스트 스태거 등장 ---- */
+@keyframes rise-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.stagger-item {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: rise-in 300ms var(--ease-out-strong) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-item {
+    transform: none;
+    animation-duration: 150ms;
+  }
+  .pressable:active {
+    transform: none;
+  }
 }

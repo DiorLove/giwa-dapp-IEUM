@@ -17,9 +17,9 @@ export function FaucetCard() {
 
   if (!address) return null;
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-semibold text-stone-400">내 모의 원화 잔액</div>
-      <div className="mt-0.5 text-2xl font-black tabular-nums">
+    <div className="liquid-glass rounded-2xl p-4">
+      <div className="text-xs font-semibold text-white/40">내 모의 원화 잔액</div>
+      <div className="mt-0.5 text-2xl font-black text-white tabular-nums">
         {fmtKRW(balance ?? 0n)}
       </div>
       <button
@@ -30,7 +30,7 @@ export function FaucetCard() {
             { onSuccess: () => setTimeout(() => refetch(), 2000) }
           )
         }
-        className="mt-3 w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+        className="pressable mt-3 w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-bold text-black disabled:opacity-50"
       >
         {isPending ? "발급 중…" : "₩10,000,000 무료 발급 (테스트넷)"}
       </button>
