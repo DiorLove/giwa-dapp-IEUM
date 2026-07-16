@@ -95,10 +95,11 @@
 
 **제출 답변:**
 
-> MulleFactory (Verified): https://sepolia-explorer.giwa.io/address/【FACTORY_ADDR】
-> MockKRW (Verified): https://sepolia-explorer.giwa.io/address/【MOCKKRW_ADDR】
-> 완주 데모 계 인스턴스: https://sepolia-explorer.giwa.io/address/【DEMO_MULLE_ADDR】
-> 소스 저장소: 【GitHub 레포 공개 링크】 (Foundry 테스트 【N】개 포함)
+> MulleFactory (Verified): https://sepolia-explorer.giwa.io/address/0x41e70B75eE359A86F54daE3B342C5b876b0Cdd2e
+> MockKRW (Verified): https://sepolia-explorer.giwa.io/address/0x34e78932cB132e248EEf189ed66574E9dffc18BB
+> 완주 데모 계 인스턴스: https://sepolia-explorer.giwa.io/address/0x9409Ec65128f5Dd9686F6e739f1520170F87D85A
+> (생성→참여→온체인 제비뽑기→3회차 납입/정산→전원 수령까지 실제 완주한 계입니다. 상세 tx 목록: 레포 docs/superpowers/evidence/)
+> 소스 저장소: 【GitHub 레포 공개 링크】 (Foundry 테스트 28개 포함)
 
 ---
 
