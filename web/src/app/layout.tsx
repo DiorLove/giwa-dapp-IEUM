@@ -3,8 +3,9 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "물레 MULLE — 온체인 계모임",
-  description: "계주는 컨트랙트, 신뢰는 체인에. 돌려라, 목돈이 온다.",
+  title: "이음 IEUM — 한국형 온체인 에스크로",
+  description:
+    "전세금 반환, 이사 잔금, 곗돈. 한국인의 목돈이 움직이는 길을 스마트 컨트랙트로 잇습니다.",
 };
 
 export const viewport: Viewport = {

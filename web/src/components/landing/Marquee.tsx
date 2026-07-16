@@ -1,18 +1,22 @@
-const ITEMS = [
-  "계주 먹튀 원천 차단",
-  "온체인 제비뽑기",
-  "보증금 슬래싱",
-  "GIWA Sepolia에서 실제 동작 중",
-  "장부는 체인에, 곗돈은 컨트랙트에",
-  "Foundry 테스트 28/28",
+"use client";
+import { useLang } from "@/lib/i18n";
+
+const ITEMS: [string, string][] = [
+  ["원자적 연쇄 정산 — 한 트랜잭션", "Atomic chain settlement — one transaction"],
+  ["브리지 선지급 — 이사 날짜를 잇다", "Bridge advance — linking moving days"],
+  ["서류 해시 앵커링", "Document hash anchoring"],
+  ["온체인 계모임", "On-chain savings circles"],
+  ["GIWA Sepolia에서 실제 동작 중", "Live on GIWA Sepolia"],
+  ["Foundry 테스트 40/40", "Foundry tests 40/40"],
 ];
 
 export function Marquee() {
+  const { t } = useLang();
   const row = (
     <div className="flex shrink-0 items-center">
-      {ITEMS.map((item) => (
-        <span key={item} className="flex items-center whitespace-nowrap">
-          <span className="px-6 text-sm tracking-wide text-white/40">{item}</span>
+      {ITEMS.map(([ko, en]) => (
+        <span key={ko} className="flex items-center whitespace-nowrap">
+          <span className="px-6 text-sm tracking-wide text-white/40">{t(ko, en)}</span>
           <span className="font-display italic text-white/25">✳</span>
         </span>
       ))}

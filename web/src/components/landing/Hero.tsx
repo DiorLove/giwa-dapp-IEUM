@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Code2, AtSign, Globe } from "lucide-react";
 import { explorerUrl } from "@/lib/contracts";
+import { LangToggle, useLang } from "@/lib/i18n";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 
@@ -25,6 +26,7 @@ const HERO_VIDEO =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_074625_a81f018a-956b-43fb-9aee-4d1508e30e6a.mp4";
 
 export function Hero() {
+  const { t } = useLang();
   const videoRef = useRef<HTMLVideoElement>(null);
   const rafRef = useRef<number>(0);
 
@@ -98,28 +100,29 @@ export function Hero() {
         <div className="liquid-glass mx-auto flex max-w-5xl items-center justify-between rounded-full px-6 py-3">
           <div className="flex items-center">
             <span className="font-display text-lg text-white">
-              물레 <span className="text-white/40">MULLE</span>
+              이음 <span className="text-white/40">IEUM</span>
             </span>
             <div className="ml-8 hidden gap-8 md:flex">
-              <a href="#about" className="text-sm font-medium text-white/80 transition-colors hover:text-white">소개</a>
-              <a href="#how" className="text-sm font-medium text-white/80 transition-colors hover:text-white">작동 방식</a>
-              <a href="#roadmap" className="text-sm font-medium text-white/80 transition-colors hover:text-white">로드맵</a>
+              <a href="#about" className="text-sm font-medium text-white/80 transition-colors hover:text-white">{t("소개", "About")}</a>
+              <a href="#how" className="text-sm font-medium text-white/80 transition-colors hover:text-white">{t("작동 방식", "How it works")}</a>
+              <a href="#products" className="text-sm font-medium text-white/80 transition-colors hover:text-white">{t("프로덕트", "Products")}</a>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <a
-              href={explorerUrl("address/0x41e70B75eE359A86F54daE3B342C5b876b0Cdd2e")}
+              href={explorerUrl("address/0xD37eD0FBEeD8BC364982F2E60B90B48D8067DE08")}
               target="_blank"
               rel="noreferrer"
               className="hidden text-sm font-medium text-white/80 transition-colors hover:text-white sm:block"
             >
-              컨트랙트
+              {t("컨트랙트", "Contracts")}
             </a>
+            <LangToggle className="hidden sm:flex" />
             <Link
-              href="/app"
+              href="/jeonse"
               className="liquid-glass glass-hover pressable rounded-full px-6 py-2 text-sm font-medium text-white"
             >
-              앱 실행
+              {t("앱 실행", "Launch App")}
             </Link>
           </div>
         </div>
@@ -134,40 +137,42 @@ export function Hero() {
       >
         <h1 className="font-display text-6xl tracking-tight text-white md:text-8xl lg:text-9xl">
           <motion.span variants={riseBlur} className="inline-block">
-            돌려라,
+            {t("목돈의", "Big money,")}
           </motion.span>{" "}
           <motion.span variants={riseBlur} className="inline-block">
-            <em className="italic">목돈</em>이
+            {t("길을,", "finally")}
           </motion.span>{" "}
           <motion.span variants={riseBlur} className="inline-block">
-            온다
+            <em className="italic">{t("잇다", "linked")}</em>
           </motion.span>
         </h1>
         <motion.p
           variants={riseBlur}
-          className="max-w-md text-sm leading-relaxed text-white/80 md:text-base"
+          className="max-w-lg text-sm leading-relaxed text-white/80 md:text-base"
         >
-          800년을 이어온 한국의 저축 문화 &lsquo;계&rsquo;를 GIWA 체인 위에 다시
-          지었습니다. 계주 없이, 장부 없이 — 신뢰는 스마트 컨트랙트가 대신합니다.
+          {t(
+            "전세금 반환, 이사 잔금, 곗돈 — 한국인의 목돈이 움직이는 길을 스마트 컨트랙트로 잇습니다. 날짜가 어긋나도, 사람이 사라져도, 정산은 약속대로 실행됩니다.",
+            "Jeonse deposits, moving-day balances, savings circles — IEUM links the paths where Korea's big money moves, with smart contracts. Even when dates slip or people vanish, settlement executes as promised."
+          )}
         </motion.p>
         <motion.div
           variants={riseBlur}
           className="flex w-full max-w-xl flex-col items-center gap-3 sm:flex-row sm:justify-center"
         >
           <Link
-            href="/app"
+            href="/jeonse"
             className="cta pressable flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-black"
           >
-            내 첫 계모임 열기
+            {t("전세 에스크로 시작하기", "Start a Jeonse Escrow")}
             <ArrowRight size={18} className="cta-arrow" />
           </Link>
           <a
-            href={explorerUrl("address/0x9409Ec65128f5Dd9686F6e739f1520170F87D85A")}
+            href={explorerUrl("address/0x8a29Eaae4441289482D100aEE428d1DCa99D589c")}
             target="_blank"
             rel="noreferrer"
             className="liquid-glass glass-hover pressable rounded-full px-8 py-3.5 text-sm font-medium text-white"
           >
-            완주한 계, 온체인으로 보기
+            {t("실제 정산 기록, 온체인으로 보기", "See a real settlement on-chain")}
           </a>
         </motion.div>
       </motion.div>

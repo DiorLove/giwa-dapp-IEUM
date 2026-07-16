@@ -1,0 +1,211 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { usePublicClient, useWriteContract } from "wagmi";
+import { parseUnits, decodeEventLog, isAddress } from "viem";
+import { JEONSE_FACTORY_ADDRESS, errMsg, jeonseFactoryAbi } from "@/lib/contracts";
+import { AppNav } from "@/components/AppNav";
+import { FadeUp } from "@/components/Motion";
+
+export default function JeonseCreate() {
+  const router = useRouter();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
+  const [tenantIn, setTenantIn] = useState("");
+  const [tenantOut, setTenantOut] = useState("");
+  const [jeonse, setJeonse] = useState("300000000");
+  const [refund, setRefund] = useState("280000000");
+  const [settleDate, setSettleDate] = useState("");
+  const [demo10min, setDemo10min] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const valid =
+    isAddress(tenantIn) &&
+    isAddress(tenantOut) &&
+    Number(jeonse) > 0 &&
+    Number(refund) >= 0 &&
+    Number(refund) <= Number(jeonse) &&
+    (demo10min || !!settleDate);
+
+  async function create() {
+    setBusy(true);
+    setError(null);
+    try {
+      const ts = demo10min
+        ? BigInt(Math.floor(Date.now() / 1000) + 600)
+        : BigInt(Math.floor(new Date(settleDate).getTime() / 1000));
+      const hash = await writeContractAsync({
+        address: JEONSE_FACTORY_ADDRESS,
+        abi: jeonseFactoryAbi,
+        functionName: "createEscrow",
+        args: [
+          tenantIn as `0x${string}`,
+          tenantOut as `0x${string}`,
+          parseUnits(jeonse, 18),
+          parseUnits(refund, 18),
+          ts,
+        ],
+      });
+      const receipt = await publicClient!.waitForTransactionReceipt({ hash });
+      for (const log of receipt.logs) {
+        try {
+          const ev = decodeEventLog({ abi: jeonseFactoryAbi, ...log });
+          if (ev.eventName === "EscrowCreated") {
+            router.push(`/jeonse/${(ev.args as { escrow: string }).escrow}`);
+            return;
+          }
+        } catch {}
+      }
+      router.push("/jeonse");
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const label = "text-xs uppercase tracking-[0.15em] text-white/35";
+  const input =
+    "h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition-colors [color-scheme:dark] focus:border-white/30";
+  const landlordDiff = Math.max(Number(jeonse || 0) - Number(refund || 0), 0);
+
+  return (
+    <div className="min-h-screen bg-black">
+      <AppNav />
+      <main className="mx-auto max-w-6xl px-6 pb-24">
+        <FadeUp className="pt-12 pb-10">
+          <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">New Escrow</p>
+          <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
+            전세 에스크로 개설
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/40">
+            집주인이 개설합니다. 신규 세입자가 전세금을 락하면, 정산일에
+            기존 세입자 보증금 반환과 집주인 차액 수령이 한 트랜잭션으로
+            동시에 실행됩니다.
+          </p>
+        </FadeUp>
+
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
+          <FadeUp delay={0.08} className="flex flex-col gap-8">
+            <div className="flex flex-col gap-3">
+              <span className={label}>신규 세입자 주소 — 전세금을 납입할 사람</span>
+              <input
+                value={tenantIn}
+                onChange={(e) => setTenantIn(e.target.value.trim())}
+                placeholder="0x…"
+                className={`${input} font-mono`}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <span className={label}>기존 세입자 주소 — 보증금을 돌려받을 사람</span>
+              <input
+                value={tenantOut}
+                onChange={(e) => setTenantOut(e.target.value.trim())}
+                placeholder="0x…"
+                className={`${input} font-mono`}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="flex flex-col gap-3">
+                <span className={label}>신규 전세금</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={jeonse}
+                    onChange={(e) => setJeonse(e.target.value)}
+                    className={`${input} pr-16`}
+                  />
+                  <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-xs text-white/35">
+                    mKRW
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <span className={label}>반환할 기존 보증금</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={refund}
+                    onChange={(e) => setRefund(e.target.value)}
+                    className={`${input} pr-16`}
+                  />
+                  <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-xs text-white/35">
+                    mKRW
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <span className={label}>정산일 (입주일)</span>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  onClick={() => setDemo10min(true)}
+                  className={`pressable rounded-xl border px-5 py-3 text-sm transition-colors ${
+                    demo10min
+                      ? "border-white/40 bg-white/[0.06] text-white"
+                      : "border-white/10 text-white/50 hover:border-white/20"
+                  }`}
+                >
+                  10분 뒤 — 데모용
+                </button>
+                <input
+                  type="datetime-local"
+                  value={settleDate}
+                  onChange={(e) => {
+                    setSettleDate(e.target.value);
+                    setDemo10min(false);
+                  }}
+                  className={`${input} sm:flex-1 ${demo10min ? "opacity-40" : ""}`}
+                />
+              </div>
+            </div>
+            {error && (
+              <p className="rounded-xl border border-red-400/20 bg-red-400/5 p-4 text-xs leading-relaxed break-words text-red-300">
+                {error}
+              </p>
+            )}
+          </FadeUp>
+
+          <FadeUp
+            delay={0.16}
+            className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
+          >
+            <p className={label}>정산 구조</p>
+            <dl className="mt-6 flex flex-col gap-4 border-b border-white/[0.06] pb-6">
+              <div className="flex items-baseline justify-between">
+                <dt className="text-sm text-white/40">신규 세입자 락</dt>
+                <dd className="text-xl font-medium text-white tabular-nums">
+                  ₩{Number(jeonse || 0).toLocaleString("ko-KR")}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <dt className="text-sm text-white/40">기존 세입자 반환</dt>
+                <dd className="text-sm text-white/70 tabular-nums">
+                  ₩{Number(refund || 0).toLocaleString("ko-KR")}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <dt className="text-sm text-white/40">집주인 차액 수령</dt>
+                <dd className="text-sm text-white/70 tabular-nums">
+                  ₩{landlordDiff.toLocaleString("ko-KR")}
+                </dd>
+              </div>
+            </dl>
+            <button
+              onClick={create}
+              disabled={busy || !valid}
+              className="pressable mt-6 h-12 w-full rounded-full bg-white text-sm font-semibold text-black disabled:opacity-40"
+            >
+              {busy ? "개설 중" : "에스크로 개설"}
+            </button>
+            <p className="mt-4 text-xs leading-relaxed text-white/30">
+              세 당사자의 몫은 정산일에 하나의 트랜잭션으로 동시에
+              확정됩니다. 돈이 사람 손을 거치지 않습니다.
+            </p>
+          </FadeUp>
+        </div>
+      </main>
+    </div>
+  );
+}

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useAccount, useReadContract, useReadContracts, useWriteContract } from "wagmi";
 import { ArrowUpRight, Plus } from "lucide-react";
@@ -26,6 +27,7 @@ const STATE_META = [
 export default function AppHome() {
   const { address } = useAccount();
   const { writeContract, isPending } = useWriteContract();
+  const [view, setView] = useState<"mine" | "all">("mine");
 
   const { data: all } = useReadContract({
     address: FACTORY_ADDRESS,
@@ -132,7 +134,25 @@ export default function AppHome() {
         {/* Kye table */}
         <FadeUp delay={0.16} className="mt-14">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-[0.15em] text-white/35">전체 계 목록</h2>
+            <h2 className="text-sm uppercase tracking-[0.15em] text-white/35">계 목록</h2>
+            <div className="flex items-center rounded-full border border-white/10 p-0.5 text-xs font-medium">
+              {(
+                [
+                  ["mine", "내 계"],
+                  ["all", "전체"],
+                ] as const
+              ).map(([v, l]) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`pressable rounded-full px-4 py-1.5 transition-colors ${
+                    view === v ? "bg-white text-black" : "text-white/40 hover:text-white"
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
@@ -150,7 +170,20 @@ export default function AppHome() {
               </p>
             )}
 
-            {[...mulles].reverse().map((m, idx) => {
+            {view === "mine" && !address && mulles.length > 0 && (
+              <p className="px-6 py-16 text-center text-sm text-white/30">
+                지갑을 연결하면 내가 참여 중인 계만 모아서 보여드려요.
+              </p>
+            )}
+
+            {[...mulles]
+              .reverse()
+              .filter((m) => {
+                if (view === "all") return true;
+                if (!address) return false;
+                return infos?.[mulles.indexOf(m) * 5 + 4]?.result === true;
+              })
+              .map((m, idx) => {
               const i = mulles.indexOf(m);
               const base = i * 5;
               const state = infos?.[base]?.result as number | undefined;
@@ -190,7 +223,7 @@ export default function AppHome() {
                   </span>
                 </Link>
               );
-            })}
+              })}
           </div>
         </FadeUp>
 

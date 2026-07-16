@@ -1,12 +1,14 @@
 "use client";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { useLang } from "@/lib/i18n";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 const VIDEO =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260307_083826_e938b29f-a43a-41ec-a153-3d4730578ab8.mp4";
 
 export function PhilosophySection() {
+  const { t } = useLang();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -19,7 +21,9 @@ export function PhilosophySection() {
           transition={{ duration: 0.8, ease: EASE }}
           className="mb-16 text-5xl tracking-tight text-white md:mb-24 md:text-7xl lg:text-8xl"
         >
-          전통 <span className="font-display italic text-white/40">×</span> 체인
+          {t("전통", "Tradition")}{" "}
+          <span className="font-display italic text-white/40">×</span>{" "}
+          {t("체인", "Chain")}
         </motion.h2>
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
@@ -48,24 +52,25 @@ export function PhilosophySection() {
           >
             <div>
               <p className="mb-4 text-xs uppercase tracking-widest text-white/40">
-                순번은 하늘이 정한다
+                {t("돈이 사람 손을 거치지 않는다", "Money never touches human hands")}
               </p>
               <p className="text-base leading-relaxed text-white/70 md:text-lg">
-                전통 계의 제비뽑기를 온체인 추첨으로 되살렸습니다. 계주도,
-                족보도 순번을 바꿀 수 없습니다. 원하면 계주가 순번을 제안하고
-                전원이 지갑으로 서명하는 방식도 선택할 수 있습니다.
+                {t(
+                  "전세금은 집주인을 거쳐 흐르지 않습니다. 컨트랙트에 락된 돈이 정산일에 보증금 반환과 차액 지급으로 동시에 갈라집니다. 한 트랜잭션 안에서 — 그래서 먹튀도, 지연도 구조적으로 불가능합니다.",
+                  "Deposits never flow through the landlord. Funds locked in the contract split into the refund and the balance simultaneously on settlement day — inside a single transaction. Fraud and delay become structurally impossible."
+                )}
               </p>
             </div>
             <div className="my-8 h-px w-full bg-white/10" />
             <div>
               <p className="mb-4 text-xs uppercase tracking-widest text-white/40">
-                약속은 보증금이 지킨다
+                {t("며칠의 공백은 풀이 잇는다", "The pool bridges the gap of days")}
               </p>
               <p className="text-base leading-relaxed text-white/70 md:text-lg">
-                먼저 곗돈을 타고 잠적하는 문제, 물레는 보증금으로 풉니다. 미납은
-                보증금에서 자동 차감되고, 그마저 바닥나면 남은 사람들에게
-                납입액 비례로 정산됩니다. 감정이 아니라 코드가 계를 끝까지
-                책임집니다.
+                {t(
+                  "이사 날짜가 어긋나는 그 며칠 — 브리지 풀이 잇습니다. 다음 세입자의 돈이 이미 락된 것을 컨트랙트가 확인한 뒤에만 선지급하니, 담보가 눈에 보이는 초단기 유동성입니다. 수수료는 예치자의 수익이 됩니다.",
+                  "Those few days when moving dates misalign — the bridge pool links them. It advances funds only after the contract confirms the next tenant's money is already locked: ultra-short liquidity with visible collateral. Fees go to depositors."
+                )}
               </p>
             </div>
           </motion.div>

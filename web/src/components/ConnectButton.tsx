@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { giwaSepolia } from "@/lib/chain";
 import { shortAddr } from "@/lib/contracts";
@@ -8,6 +9,14 @@ export function ConnectButton() {
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
+  // SSR과 클라이언트의 지갑 상태가 달라 생기는 하이드레이션 불일치 방지
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted)
+    return (
+      <span className="inline-block h-9 w-[92px] rounded-full border border-white/10" />
+    );
 
   if (!isConnected)
     return (

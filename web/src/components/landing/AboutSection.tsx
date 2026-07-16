@@ -1,10 +1,12 @@
 "use client";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { useLang } from "@/lib/i18n";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 
 export function AboutSection() {
+  const { t } = useLang();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -22,7 +24,7 @@ export function AboutSection() {
           transition={{ duration: 0.6, ease: EASE }}
           className="mb-8 text-sm uppercase tracking-widest text-white/40"
         >
-          물레는
+          {t("이음은", "IEUM is")}
         </motion.p>
         <motion.h2
           initial={{ opacity: 0, y: 40 }}
@@ -30,13 +32,17 @@ export function AboutSection() {
           transition={{ duration: 0.8, delay: 0.1, ease: EASE }}
           className="text-4xl leading-[1.15] tracking-tight text-white md:text-6xl lg:text-7xl"
         >
-          계주도, 총무도, 장부도 없이{" "}
-          <span className="font-display italic text-white/60">곗돈</span>을
-          <br className="hidden md:block" /> 지키는{" "}
+          {t("전세금도, 곗돈도 — 돈이 ", "Deposits and savings circles — ")}
           <span className="font-display italic text-white/60">
-            온체인 계모임
+            {t("사람 손", "escrow")}
           </span>
-          입니다.
+          {t("을", " where money")}
+          <br className="hidden md:block" />{" "}
+          {t("거치지 않는 ", "never passes through ")}
+          <span className="font-display italic text-white/60">
+            {t("한국형 에스크로", "human hands")}
+          </span>
+          {t("입니다.", ".")}
         </motion.h2>
       </div>
     </section>

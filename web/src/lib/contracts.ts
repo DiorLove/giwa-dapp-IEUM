@@ -2,6 +2,10 @@ import { parseAbi } from "viem";
 
 export const MOCKKRW_ADDRESS = process.env.NEXT_PUBLIC_MOCKKRW_ADDRESS as `0x${string}`;
 export const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
+export const JEONSE_FACTORY_ADDRESS = process.env
+  .NEXT_PUBLIC_JEONSE_FACTORY_ADDRESS as `0x${string}`;
+export const BRIDGE_POOL_ADDRESS = process.env
+  .NEXT_PUBLIC_BRIDGE_POOL_ADDRESS as `0x${string}`;
 
 export const mockKrwAbi = parseAbi([
   "function faucet()",
@@ -48,6 +52,44 @@ export const mulleAbi = parseAbi([
   "function settle()",
   "function claim()",
   "function cancelRecruitment()",
+]);
+
+export const jeonseFactoryAbi = parseAbi([
+  "function createEscrow(address tenantIn, address tenantOut, uint256 jeonseAmount, uint256 refundAmount, uint256 settleDate) returns (address)",
+  "function getAll() view returns (address[])",
+  "function count() view returns (uint256)",
+  "event EscrowCreated(address indexed escrow, address indexed landlord, address indexed tenantIn, address tenantOut)",
+]);
+
+export const jeonseAbi = parseAbi([
+  "function state() view returns (uint8)",
+  "function landlord() view returns (address)",
+  "function tenantIn() view returns (address)",
+  "function tenantOut() view returns (address)",
+  "function jeonseAmount() view returns (uint256)",
+  "function refundAmount() view returns (uint256)",
+  "function settleDate() view returns (uint256)",
+  "function bridged() view returns (bool)",
+  "function claimable(address) view returns (uint256)",
+  "function cancelApproved(address) view returns (bool)",
+  "function documentCount() view returns (uint256)",
+  "function documents(uint256) view returns (bytes32 hash, string label, address by, uint256 timestamp)",
+  "function fund()",
+  "function settle()",
+  "function cancel()",
+  "function claim()",
+  "function anchorDocument(bytes32 hash, string label)",
+]);
+
+export const bridgePoolAbi = parseAbi([
+  "function deposit(uint256 amount)",
+  "function withdraw(uint256 shareAmount)",
+  "function bridge(address escrowAddr)",
+  "function shares(address) view returns (uint256)",
+  "function totalShares() view returns (uint256)",
+  "function totalOutstanding() view returns (uint256)",
+  "function totalAssets() view returns (uint256)",
+  "function FEE_BPS() view returns (uint256)",
 ]);
 
 export const fmtKRW = (wei: bigint) =>
