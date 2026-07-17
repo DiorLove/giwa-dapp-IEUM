@@ -1,4 +1,5 @@
 "use client";
+import { useLang } from "@/lib/i18n";
 
 /** 멤버를 원형으로 배치하고 현재 순번을 강조하는 물레 UI (다크) */
 export function MulleWheel({
@@ -10,6 +11,7 @@ export function MulleWheel({
   current: number;
   me?: string;
 }) {
+  const { t } = useLang();
   const n = order.length;
   if (n === 0) return null;
   const R = 80;
@@ -70,17 +72,21 @@ export function MulleWheel({
             </text>
             {isMe && (
               <text textAnchor="middle" dy={-24} fontSize={10} fontWeight="bold" fill="#fff">
-                나
+                {t("나", "me")}
               </text>
             )}
           </g>
         );
       })}
       <text textAnchor="middle" dy={-4} fontSize={13} fontWeight="800" fill="#fff">
-        {current < n ? `${current + 1}번째 회차` : "완주"}
+        {current < n
+          ? t(`${current + 1}번째 회차`, `Round ${current + 1}`)
+          : t("완주", "Complete")}
       </text>
       <text textAnchor="middle" dy={14} fontSize={9} fill="rgba(255,255,255,0.4)">
-        {current < n ? "물레가 돌고 있어요" : "모두가 목돈을 탔어요"}
+        {current < n
+          ? t("물레가 돌고 있어요", "The wheel is turning")
+          : t("모두가 목돈을 탔어요", "Everyone got their pot")}
       </text>
     </svg>
   );

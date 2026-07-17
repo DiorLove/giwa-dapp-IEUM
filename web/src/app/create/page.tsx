@@ -7,21 +7,23 @@ import { FACTORY_ADDRESS, errMsg, factoryAbi } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { Dropdown } from "@/components/Dropdown";
 import { FadeUp } from "@/components/Motion";
+import { useLang } from "@/lib/i18n";
 
-const ROUND_OPTIONS = [
-  { label: "10분", value: 600, hint: "데모용" },
-  { label: "1일", value: 86400 },
-  { label: "1주", value: 604800 },
-  { label: "1개월", value: 2592000, hint: "30일" },
-];
+const ROUND_RAW = [
+  { label: ["10분", "10 min"], value: 600, hint: ["데모용", "demo"] },
+  { label: ["1일", "1 day"], value: 86400 },
+  { label: ["1주", "1 week"], value: 604800 },
+  { label: ["1개월", "1 month"], value: 2592000, hint: ["30일", "30 days"] },
+] as { label: [string, string]; value: number; hint?: [string, string] }[];
 
-const DEPOSIT_OPTIONS = [
-  { label: "없음", value: 0, hint: "믿는 지인끼리" },
-  { label: "납입액 1회분", value: 1 },
-  { label: "납입액 2회분", value: 2 },
-];
+const DEPOSIT_RAW = [
+  { label: ["없음", "None"], value: 0, hint: ["믿는 지인끼리", "trusted friends"] },
+  { label: ["납입액 1회분", "1 round worth"], value: 1 },
+  { label: ["납입액 2회분", "2 rounds worth"], value: 2 },
+] as { label: [string, string]; value: number; hint?: [string, string] }[];
 
 export default function CreatePage() {
+  const { t } = useLang();
   const router = useRouter();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -68,6 +70,16 @@ export default function CreatePage() {
     }
   }
 
+  const roundOptions = ROUND_RAW.map((o) => ({
+    value: o.value,
+    label: t(o.label[0], o.label[1]),
+    hint: o.hint ? t(o.hint[0], o.hint[1]) : undefined,
+  }));
+  const depositOptions = DEPOSIT_RAW.map((o) => ({
+    value: o.value,
+    label: t(o.label[0], o.label[1]),
+    hint: o.hint ? t(o.hint[0], o.hint[1]) : undefined,
+  }));
   const pot = Number(amount || 0) * members;
   const depositAmt = Number(amount || 0) * depositRounds;
   const label = "text-xs uppercase tracking-[0.15em] text-white/35";
@@ -82,7 +94,7 @@ export default function CreatePage() {
         <FadeUp className="pt-12 pb-10">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">New</p>
           <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
-            새 계모임 개설
+            {t("새 계모임 개설", "Create a Gye Circle")}
           </h1>
         </FadeUp>
 
@@ -91,10 +103,10 @@ export default function CreatePage() {
           <FadeUp delay={0.08} className="flex flex-col gap-8">
             <div className="flex flex-col gap-4">
               <div className="flex items-baseline justify-between">
-                <span className={label}>인원</span>
+                <span className={label}>{t("인원", "Members")}</span>
                 <span className="text-sm text-white tabular-nums">
                   {members}
-                  <span className="text-white/35">명</span>
+                  <span className="text-white/35">{t("명", "")}</span>
                 </span>
               </div>
               <input
@@ -105,13 +117,13 @@ export default function CreatePage() {
               />
               <div className="flex justify-between text-[11px] text-white/25 tabular-nums">
                 <span>3</span>
-                <span>{members}회차 동안 매 회차 한 명씩 곗돈을 받습니다</span>
+                <span>{t(`${members}회차 동안 매 회차 한 명씩 곗돈을 받습니다`, `${members} rounds — one member gets the pot each round`)}</span>
                 <span>12</span>
               </div>
             </div>
 
             <div className="flex flex-col gap-3">
-              <span className={label}>회당 납입액</span>
+              <span className={label}>{t("회당 납입액", "Contribution per round")}</span>
               <div className="relative">
                 <input
                   type="number" inputMode="numeric" value={amount}
@@ -126,25 +138,25 @@ export default function CreatePage() {
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="flex flex-col gap-3">
-                <span className={label}>납입 주기</span>
-                <Dropdown value={round} options={ROUND_OPTIONS} onChange={setRound} />
+                <span className={label}>{t("납입 주기", "Round length")}</span>
+                <Dropdown value={round} options={roundOptions} onChange={setRound} />
               </div>
               <div className="flex flex-col gap-3">
-                <span className={label}>보증금</span>
+                <span className={label}>{t("보증금", "Security deposit")}</span>
                 <Dropdown
                   value={depositRounds}
-                  options={DEPOSIT_OPTIONS}
+                  options={depositOptions}
                   onChange={setDepositRounds}
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-3">
-              <span className={label}>순번 결정 방식</span>
+              <span className={label}>{t("순번 결정 방식", "Payout order")}</span>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
-                  { title: "온체인 추첨", desc: "블록 해시 기반 무작위 배정. 누구도 조작할 수 없습니다." },
-                  { title: "계주 지정", desc: "개설자가 순번을 제안하고 전원이 지갑 서명으로 동의합니다." },
+                  { title: t("온체인 추첨", "On-chain lottery"), desc: t("블록 해시 기반 무작위 배정. 누구도 조작할 수 없습니다.", "Random assignment from block hashes. No one can rig it.") },
+                  { title: t("계주 지정", "Organizer assigns"), desc: t("개설자가 순번을 제안하고 전원이 지갑 서명으로 동의합니다.", "The organizer proposes an order and every member approves by wallet signature.") },
                 ].map((opt, i) => (
                   <button
                     key={opt.title}
@@ -174,23 +186,23 @@ export default function CreatePage() {
             delay={0.16}
             className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
           >
-            <p className={label}>요약</p>
+            <p className={label}>{t("요약", "Summary")}</p>
             <dl className="mt-6 flex flex-col gap-4 border-b border-white/[0.06] pb-6">
               <div className="flex items-baseline justify-between">
-                <dt className="text-sm text-white/40">회차당 곗돈</dt>
+                <dt className="text-sm text-white/40">{t("회차당 곗돈", "Pot per round")}</dt>
                 <dd className="text-xl font-medium text-white tabular-nums">
                   ₩{pot.toLocaleString("ko-KR")}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between">
-                <dt className="text-sm text-white/40">참여 시 보증금</dt>
+                <dt className="text-sm text-white/40">{t("참여 시 보증금", "Deposit to join")}</dt>
                 <dd className="text-sm text-white/70 tabular-nums">
-                  {depositRounds === 0 ? "없음" : `₩${depositAmt.toLocaleString("ko-KR")}`}
+                  {depositRounds === 0 ? t("없음", "None") : `₩${depositAmt.toLocaleString("ko-KR")}`}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between">
-                <dt className="text-sm text-white/40">총 회차</dt>
-                <dd className="text-sm text-white/70 tabular-nums">{members}회</dd>
+                <dt className="text-sm text-white/40">{t("총 회차", "Total rounds")}</dt>
+                <dd className="text-sm text-white/70 tabular-nums">{members}{t("회", "")}</dd>
               </div>
             </dl>
             <button
@@ -198,11 +210,13 @@ export default function CreatePage() {
               disabled={busy || Number(amount) <= 0}
               className="pressable mt-6 h-12 w-full rounded-full bg-white text-sm font-semibold text-black disabled:opacity-40"
             >
-              {busy ? "개설 중" : "계모임 개설"}
+              {busy ? t("개설 중", "Creating") : t("계모임 개설", "Create Circle")}
             </button>
             <p className="mt-4 text-xs leading-relaxed text-white/30">
-              개설 후에도 계주는 자금에 접근할 수 없습니다. 모든 보관과 지급은
-              스마트 컨트랙트가 수행합니다.
+              {t(
+                "개설 후에도 계주는 자금에 접근할 수 없습니다. 모든 보관과 지급은 스마트 컨트랙트가 수행합니다.",
+                "Even the organizer can never touch the funds. All custody and payouts are handled by the smart contract."
+              )}
             </p>
           </FadeUp>
         </div>

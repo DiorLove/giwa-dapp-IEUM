@@ -16,9 +16,15 @@ import { AppNav } from "@/components/AppNav";
 import { MulleWheel } from "@/components/MulleWheel";
 import { FadeUp, SwapIn } from "@/components/Motion";
 import { giwaSepolia } from "@/lib/chain";
+import { useLang } from "@/lib/i18n";
 
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
-const STATE_LABEL = ["모집 중", "진행 중", "완주", "종료"];
+const STATE_LABEL: [string, string][] = [
+  ["모집 중", "Recruiting"],
+  ["진행 중", "Active"],
+  ["완주", "Completed"],
+  ["종료", "Closed"],
+];
 const STATE_CLS = [
   "border-amber-400/30 text-amber-300",
   "border-emerald-400/30 text-emerald-300",
@@ -27,6 +33,7 @@ const STATE_CLS = [
 ];
 
 export default function KyePage({ params }: { params: Promise<{ address: string }> }) {
+  const { t } = useLang();
   const { address: kyeAddr } = use(params);
   const kye = kyeAddr as `0x${string}`;
   const { address: me, chainId } = useAccount();
@@ -163,14 +170,14 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
         <FadeUp className="flex flex-col gap-4 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-2 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/35">
-              계 상세
+              {t("계 상세", "Circle Detail")}
               <span className={`rounded-full border px-2.5 py-0.5 normal-case tracking-normal ${STATE_CLS[state ?? 0]}`}>
-                {STATE_LABEL[state ?? 0]}
+                {t(STATE_LABEL[state ?? 0][0], STATE_LABEL[state ?? 0][1])}
               </span>
             </p>
             <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
               {fmtKRW(contribution)}
-              <span className="ml-2 text-lg text-white/35">/ 회</span>
+              <span className="ml-2 text-lg text-white/35">{t("/ 회", "/ round")}</span>
             </h1>
           </div>
           <a
@@ -189,12 +196,12 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
           <FadeUp delay={0.08} className="flex flex-col gap-10">
             <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-4">
               {[
-                { k: "인원", v: `${members.length} / ${maxMembers}` },
-                { k: "회차당 곗돈", v: fmtKRW(contribution * BigInt(maxMembers || 0)) },
-                { k: "보증금", v: deposit > 0n ? fmtKRW(deposit) : "없음" },
+                { k: t("인원", "Members"), v: `${members.length} / ${maxMembers}` },
+                { k: t("회차당 곗돈", "Pot per round"), v: fmtKRW(contribution * BigInt(maxMembers || 0)) },
+                { k: t("보증금", "Deposit"), v: deposit > 0n ? fmtKRW(deposit) : t("없음", "None") },
                 {
-                  k: "진행",
-                  v: state === 1 ? `${round + 1} / ${maxMembers}회차` : state === 2 ? "완료" : "—",
+                  k: t("진행", "Progress"),
+                  v: state === 1 ? `${round + 1} / ${maxMembers}` : state === 2 ? t("완료", "Done") : "—",
                 },
               ].map((s) => (
                 <div key={s.k} className="bg-black p-5">
@@ -213,7 +220,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                 />
                 {state === 1 && (
                   <p className="mt-4 text-center text-xs text-white/30">
-                    이번 회차 마감 — {new Date(roundEndTs * 1000).toLocaleString("ko-KR")}
+                    {t("이번 회차 마감 —", "Round ends —")} {new Date(roundEndTs * 1000).toLocaleString("ko-KR")}
                   </p>
                 )}
               </div>
@@ -221,7 +228,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
 
             {/* Members */}
             <section>
-              <h2 className={`${label} mb-4`}>멤버</h2>
+              <h2 className={`${label} mb-4`}>{t("멤버", "Members")}</h2>
               <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
                 {members.map((m, i) => (
                   <div
@@ -235,12 +242,12 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                       {shortAddr(m)}
                       {m.toLowerCase() === me?.toLowerCase() && (
                         <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-white/50">
-                          나
+                          {t("나", "you")}
                         </span>
                       )}
                     </span>
                     <span className="text-xs text-white/30">
-                      {m.toLowerCase() === organizer?.toLowerCase() ? "개설자" : ""}
+                      {m.toLowerCase() === organizer?.toLowerCase() ? t("개설자", "Organizer") : ""}
                     </span>
                   </div>
                 ))}
@@ -253,21 +260,23 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
             delay={0.16}
             className="flex h-fit flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
           >
-            <p className={`${label} mb-4`}>액션</p>
+            <p className={`${label} mb-4`}>{t("액션", "Actions")}</p>
             <SwapIn
               id={`${state}-${isMember}-${full}-${orderProposed}-${iApproved}-${roundEnded}-${iPaid}-${claimable > 0n}-${chainId}`}
               className="flex flex-col gap-4"
             >
             {me && chainId !== giwaSepolia.id && (
               <p className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-center text-sm text-amber-300">
-                지갑이 다른 네트워크에 연결되어 있습니다. 상단에서 GIWA
-                Sepolia로 전환해 주세요.
+                {t(
+                  "지갑이 다른 네트워크에 연결되어 있습니다. 상단에서 GIWA Sepolia로 전환해 주세요.",
+                  "Your wallet is on a different network. Switch to GIWA Sepolia above."
+                )}
               </p>
             )}
 
             {state === 0 && !me && (
               <p className="rounded-xl border border-dashed border-white/15 p-5 text-center text-sm text-white/40">
-                지갑을 연결하면 이 계에 참여할 수 있습니다
+                {t("지갑을 연결하면 이 계에 참여할 수 있습니다", "Connect a wallet to join this circle")}
               </p>
             )}
 
@@ -278,24 +287,24 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                 onClick={() => approveThen(deposit, "join", "join")}
               >
                 {busy === "join"
-                  ? "참여 처리 중"
+                  ? t("참여 처리 중", "Joining")
                   : deposit > 0n
-                    ? `참여하기 — 보증금 ${fmtKRW(deposit)}`
-                    : "참여하기"}
+                    ? t(`참여하기 — 보증금 ${fmtKRW(deposit)}`, `Join — deposit ${fmtKRW(deposit)}`)
+                    : t("참여하기", "Join")}
               </button>
             )}
 
             {state === 0 && isMember && !full && (
               <div className="flex flex-col gap-3">
                 <p className="text-sm leading-relaxed text-white/50">
-                  참여 완료. 아래 링크를 공유해 남은 자리를 채우세요.
+                  {t("참여 완료. 아래 링크를 공유해 남은 자리를 채우세요.", "You are in. Share the link below to fill the remaining seats.")}
                 </p>
                 <button
                   onClick={copyLink}
                   className="pressable flex h-12 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-medium text-white transition-colors hover:border-white/30"
                 >
                   {copied ? <Check size={15} /> : <Copy size={15} />}
-                  {copied ? "복사됨" : "초대 링크 복사"}
+                  {copied ? t("복사됨", "Copied") : t("초대 링크 복사", "Copy invite link")}
                 </button>
               </div>
             )}
@@ -310,7 +319,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                   )
                 }
               >
-                {busy === "start" ? "추첨 중" : "온체인 추첨으로 시작"}
+                {busy === "start" ? t("추첨 중", "Drawing") : t("온체인 추첨으로 시작", "Start with on-chain lottery")}
               </button>
             )}
 
@@ -329,18 +338,18 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                   )
                 }
               >
-                {busy === "propose" ? "제안 중" : "순번 제안 — 참여 순서대로"}
+                {busy === "propose" ? t("제안 중", "Proposing") : t("순번 제안 — 참여 순서대로", "Propose order — by join order")}
               </button>
             )}
 
             {state === 0 && orderProposed && (
               <div className="flex flex-col gap-3">
                 <p className="text-sm text-white/50">
-                  제안된 순번에{" "}
+                  {t("제안된 순번에", "Order approved by")}{" "}
                   <span className="text-white tabular-nums">
                     {approvalCount}/{maxMembers}
                   </span>
-                  명 동의
+                  {t("명 동의", "")}
                 </p>
                 {isMember && !iApproved && (
                   <button
@@ -356,7 +365,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                       )
                     }
                   >
-                    {busy === "approve" ? "서명 중" : "순번에 동의 — 지갑 서명"}
+                    {busy === "approve" ? t("서명 중", "Signing") : t("순번에 동의 — 지갑 서명", "Approve order — wallet signature")}
                   </button>
                 )}
               </div>
@@ -368,13 +377,13 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                 className={`${primaryBtn} bg-emerald-400 text-black`}
                 onClick={() => approveThen(contribution, "pay", "pay")}
               >
-                {busy === "pay" ? "납입 중" : `이번 회차 납입 — ${fmtKRW(contribution)}`}
+                {busy === "pay" ? t("납입 중", "Paying") : t(`이번 회차 납입 — ${fmtKRW(contribution)}`, `Pay this round — ${fmtKRW(contribution)}`)}
               </button>
             )}
 
             {state === 1 && isMember && iPaid && !roundEnded && (
               <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-center text-sm text-emerald-300">
-                이번 회차 납입 완료
+                {t("이번 회차 납입 완료", "Paid for this round")}
               </p>
             )}
 
@@ -388,7 +397,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                   )
                 }
               >
-                {busy === "settle" ? "정산 중" : "회차 정산 실행 — 호출 보상 0.1%"}
+                {busy === "settle" ? t("정산 중", "Settling") : t("회차 정산 실행 — 호출 보상 0.1%", "Settle round — 0.1% caller reward")}
               </button>
             )}
 
@@ -402,13 +411,13 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                   )
                 }
               >
-                {busy === "claim" ? "수령 중" : `${fmtKRW(claimable)} 수령`}
+                {busy === "claim" ? t("수령 중", "Claiming") : t(`${fmtKRW(claimable)} 수령`, `Claim ${fmtKRW(claimable)}`)}
               </button>
             )}
 
             {state === 2 && claimable === 0n && (
               <p className="rounded-xl border border-indigo-400/20 bg-indigo-400/5 p-4 text-center text-sm text-indigo-300">
-                완주한 계입니다. 모든 정산이 끝났습니다.
+                {t("완주한 계입니다. 모든 정산이 끝났습니다.", "This circle is complete. All settlements are done.")}
               </p>
             )}
 

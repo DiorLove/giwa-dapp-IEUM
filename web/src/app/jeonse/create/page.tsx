@@ -6,8 +6,10 @@ import { parseUnits, decodeEventLog, isAddress } from "viem";
 import { JEONSE_FACTORY_ADDRESS, errMsg, jeonseFactoryAbi } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { FadeUp } from "@/components/Motion";
+import { useLang } from "@/lib/i18n";
 
 export default function JeonseCreate() {
+  const { t } = useLang();
   const router = useRouter();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -77,38 +79,41 @@ export default function JeonseCreate() {
         <FadeUp className="pt-12 pb-10">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">New Escrow</p>
           <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
-            전세 에스크로 개설
+            {t("전세 에스크로 개설", "Create Jeonse Escrow")}
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/40">
-            집주인이 개설합니다. 신규 세입자가 전세금을 락하면, 정산일에
-            기존 세입자 보증금 반환과 집주인 차액 수령이 한 트랜잭션으로
-            동시에 실행됩니다.
+            {t(
+              "집주인이 개설합니다. 신규 세입자가 전세금을 락하면, 정산일에 기존 세입자 보증금 반환과 집주인 차액 수령이 한 트랜잭션으로 동시에 실행됩니다.",
+              "Opened by the landlord. Once the incoming tenant locks the deposit, the outgoing tenant's refund and the landlord's balance execute simultaneously in one transaction on settlement day."
+            )}
           </p>
         </FadeUp>
 
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px]">
           <FadeUp delay={0.08} className="flex flex-col gap-8">
             <div className="flex flex-col gap-3">
-              <span className={label}>신규 세입자 주소 — 전세금을 납입할 사람</span>
+              <span className={label}>{t("신규 세입자 주소 — 전세금을 납입할 사람", "Incoming tenant address — pays the deposit")}</span>
               <input
                 value={tenantIn}
                 onChange={(e) => setTenantIn(e.target.value.trim())}
                 placeholder="0x…"
+                suppressHydrationWarning
                 className={`${input} font-mono`}
               />
             </div>
             <div className="flex flex-col gap-3">
-              <span className={label}>기존 세입자 주소 — 보증금을 돌려받을 사람</span>
+              <span className={label}>{t("기존 세입자 주소 — 보증금을 돌려받을 사람", "Outgoing tenant address — receives the refund")}</span>
               <input
                 value={tenantOut}
                 onChange={(e) => setTenantOut(e.target.value.trim())}
                 placeholder="0x…"
+                suppressHydrationWarning
                 className={`${input} font-mono`}
               />
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="flex flex-col gap-3">
-                <span className={label}>신규 전세금</span>
+                <span className={label}>{t("신규 전세금", "New jeonse deposit")}</span>
                 <div className="relative">
                   <input
                     type="number"
@@ -122,7 +127,7 @@ export default function JeonseCreate() {
                 </div>
               </div>
               <div className="flex flex-col gap-3">
-                <span className={label}>반환할 기존 보증금</span>
+                <span className={label}>{t("반환할 기존 보증금", "Old deposit to refund")}</span>
                 <div className="relative">
                   <input
                     type="number"
@@ -137,7 +142,7 @@ export default function JeonseCreate() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <span className={label}>정산일 (입주일)</span>
+              <span className={label}>{t("정산일 (입주일)", "Settlement date (move-in day)")}</span>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   onClick={() => setDemo10min(true)}
@@ -147,7 +152,7 @@ export default function JeonseCreate() {
                       : "border-white/10 text-white/50 hover:border-white/20"
                   }`}
                 >
-                  10분 뒤 — 데모용
+                  {t("10분 뒤 — 데모용", "In 10 minutes — demo")}
                 </button>
                 <input
                   type="datetime-local"
@@ -171,22 +176,22 @@ export default function JeonseCreate() {
             delay={0.16}
             className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
           >
-            <p className={label}>정산 구조</p>
+            <p className={label}>{t("정산 구조", "Settlement structure")}</p>
             <dl className="mt-6 flex flex-col gap-4 border-b border-white/[0.06] pb-6">
               <div className="flex items-baseline justify-between">
-                <dt className="text-sm text-white/40">신규 세입자 락</dt>
+                <dt className="text-sm text-white/40">{t("신규 세입자 락", "Incoming tenant locks")}</dt>
                 <dd className="text-xl font-medium text-white tabular-nums">
                   ₩{Number(jeonse || 0).toLocaleString("ko-KR")}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between">
-                <dt className="text-sm text-white/40">기존 세입자 반환</dt>
+                <dt className="text-sm text-white/40">{t("기존 세입자 반환", "Outgoing tenant refund")}</dt>
                 <dd className="text-sm text-white/70 tabular-nums">
                   ₩{Number(refund || 0).toLocaleString("ko-KR")}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between">
-                <dt className="text-sm text-white/40">집주인 차액 수령</dt>
+                <dt className="text-sm text-white/40">{t("집주인 차액 수령", "Landlord receives balance")}</dt>
                 <dd className="text-sm text-white/70 tabular-nums">
                   ₩{landlordDiff.toLocaleString("ko-KR")}
                 </dd>
@@ -197,11 +202,13 @@ export default function JeonseCreate() {
               disabled={busy || !valid}
               className="pressable mt-6 h-12 w-full rounded-full bg-white text-sm font-semibold text-black disabled:opacity-40"
             >
-              {busy ? "개설 중" : "에스크로 개설"}
+              {busy ? t("개설 중", "Creating") : t("에스크로 개설", "Create Escrow")}
             </button>
             <p className="mt-4 text-xs leading-relaxed text-white/30">
-              세 당사자의 몫은 정산일에 하나의 트랜잭션으로 동시에
-              확정됩니다. 돈이 사람 손을 거치지 않습니다.
+              {t(
+                "세 당사자의 몫은 정산일에 하나의 트랜잭션으로 동시에 확정됩니다. 돈이 사람 손을 거치지 않습니다.",
+                "All three parties' shares settle simultaneously in one transaction. Money never passes through human hands."
+              )}
             </p>
           </FadeUp>
         </div>

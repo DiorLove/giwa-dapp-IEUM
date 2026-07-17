@@ -17,9 +17,15 @@ import {
 import { AppNav } from "@/components/AppNav";
 import { FadeUp, SwapIn } from "@/components/Motion";
 import { giwaSepolia } from "@/lib/chain";
+import { useLang } from "@/lib/i18n";
 
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
-const STATE_LABEL = ["자금 대기", "락 완료", "정산 완료", "취소됨"];
+const STATE_LABEL: [string, string][] = [
+  ["자금 대기", "Awaiting funds"],
+  ["락 완료", "Funded"],
+  ["정산 완료", "Settled"],
+  ["취소됨", "Cancelled"],
+];
 const STATE_CLS = [
   "border-amber-400/30 text-amber-300",
   "border-emerald-400/30 text-emerald-300",
@@ -28,6 +34,7 @@ const STATE_CLS = [
 ];
 
 export default function JeonseDetail({ params }: { params: Promise<{ address: string }> }) {
+  const { t } = useLang();
   const { address: escAddr } = use(params);
   const esc = escAddr as `0x${string}`;
   const { address: me, chainId } = useAccount();
@@ -119,9 +126,9 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
     "pressable h-12 w-full rounded-full text-sm font-semibold disabled:opacity-40";
 
   const parties = [
-    { role: "집주인", addr: landlord, meFlag: isLandlord, gets: `차액 ${fmtKRW(jeonse - refund)}` },
-    { role: "신규 세입자", addr: tenantIn, meFlag: isTenantIn, gets: `전세금 ${fmtKRW(jeonse)} 락` },
-    { role: "기존 세입자", addr: tenantOut, meFlag: isTenantOut, gets: `보증금 ${fmtKRW(refund)} 수령` },
+    { role: t("집주인", "Landlord"), addr: landlord, meFlag: isLandlord, gets: t(`차액 ${fmtKRW(jeonse - refund)}`, `Balance ${fmtKRW(jeonse - refund)}`) },
+    { role: t("신규 세입자", "Incoming tenant"), addr: tenantIn, meFlag: isTenantIn, gets: t(`전세금 ${fmtKRW(jeonse)} 락`, `Locks ${fmtKRW(jeonse)}`) },
+    { role: t("기존 세입자", "Outgoing tenant"), addr: tenantOut, meFlag: isTenantOut, gets: t(`보증금 ${fmtKRW(refund)} 수령`, `Receives ${fmtKRW(refund)}`) },
   ];
 
   return (
@@ -131,15 +138,15 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
         <FadeUp className="flex flex-col gap-4 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-2 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/35">
-              전세 에스크로
+              {t("전세 에스크로", "Jeonse Escrow")}
               <span
                 className={`rounded-full border px-2.5 py-0.5 normal-case tracking-normal ${STATE_CLS[state ?? 0]}`}
               >
-                {STATE_LABEL[state ?? 0]}
+                {t(STATE_LABEL[state ?? 0][0], STATE_LABEL[state ?? 0][1])}
               </span>
               {bridged && (
                 <span className="rounded-full border border-sky-400/30 px-2.5 py-0.5 normal-case tracking-normal text-sky-300">
-                  브리지 선지급됨
+                  {t("브리지 선지급됨", "Bridge advanced")}
                 </span>
               )}
             </p>
@@ -147,7 +154,7 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
               {fmtKRW(jeonse)}
             </h1>
             <p className="mt-2 text-sm text-white/40">
-              정산일 {new Date(settleDate * 1000).toLocaleString("ko-KR")}
+              {t("정산일", "Settles")} {new Date(settleDate * 1000).toLocaleString("ko-KR")}
             </p>
           </div>
           <a
@@ -165,7 +172,7 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
           <FadeUp delay={0.08} className="flex flex-col gap-10">
             {/* 정산 구조 시각화 */}
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.01] p-8">
-              <p className={`${label} mb-6`}>원자적 연쇄 정산 구조</p>
+              <p className={`${label} mb-6`}>{t("원자적 연쇄 정산 구조", "Atomic chain settlement")}</p>
               <div className="flex flex-col gap-3">
                 {parties.map((p) => (
                   <div
@@ -176,7 +183,7 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                   >
                     <div>
                       <p className="text-sm font-medium text-white">
-                        {p.role} {p.meFlag && <span className="text-white/40">— 나</span>}
+                        {p.role} {p.meFlag && <span className="text-white/40">{t("— 나", "— you")}</span>}
                       </p>
                       <p className="mt-0.5 font-mono text-xs text-white/35">
                         {p.addr ? shortAddr(p.addr) : "—"}
@@ -187,18 +194,20 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                 ))}
               </div>
               <p className="mt-5 text-xs leading-relaxed text-white/30">
-                정산일에 누구든 정산을 실행하면 세 몫이 한 트랜잭션에서 동시에
-                확정됩니다. 중간에 돈을 쥐는 사람이 없습니다.
+                {t(
+                  "정산일에 누구든 정산을 실행하면 세 몫이 한 트랜잭션에서 동시에 확정됩니다. 중간에 돈을 쥐는 사람이 없습니다.",
+                  "On settlement day anyone can trigger settlement, and all three shares finalize in one transaction. No one holds the money in between."
+                )}
               </p>
             </div>
 
             {/* 문서 앵커 */}
             <section>
-              <h2 className={`${label} mb-4`}>문서 앵커 — 서류 하이패스</h2>
+              <h2 className={`${label} mb-4`}>{t("문서 앵커 — 서류 하이패스", "Document anchors — paperwork hi-pass")}</h2>
               <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
                 {docCount === 0 && (
                   <p className="px-6 py-10 text-center text-sm text-white/30">
-                    아직 앵커된 문서가 없습니다.
+                    {t("아직 앵커된 문서가 없습니다.", "No documents anchored yet.")}
                   </p>
                 )}
                 {docsQuery.data?.map((d, i) => {
@@ -230,7 +239,8 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                     <input
                       value={docLabel}
                       onChange={(e) => setDocLabel(e.target.value)}
-                      placeholder="문서 이름 (예: 전세계약서)"
+                      placeholder={t("문서 이름 (예: 전세계약서)", "Document name (e.g. lease contract)")}
+                      suppressHydrationWarning
                       className="h-10 flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none focus:border-white/30"
                     />
                     <button
@@ -250,7 +260,7 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                       }
                       className="pressable rounded-lg border border-white/15 px-4 text-xs font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white disabled:opacity-40"
                     >
-                      {busy === "anchor" ? "앵커 중" : "해시 앵커"}
+                      {busy === "anchor" ? t("앵커 중", "Anchoring") : t("해시 앵커", "Anchor hash")}
                     </button>
                   </div>
                 )}
@@ -263,19 +273,19 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
             delay={0.16}
             className="flex h-fit flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
           >
-            <p className={`${label} mb-4`}>액션</p>
+            <p className={`${label} mb-4`}>{t("액션", "Actions")}</p>
             <SwapIn
               id={`${state}-${bridged}-${canSettle}-${claimable > 0n}-${chainId}-${me}`}
               className="flex flex-col gap-4"
             >
               {me && chainId !== giwaSepolia.id && (
                 <p className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-center text-sm text-amber-300">
-                  지갑을 GIWA Sepolia로 전환해 주세요.
+                  {t("지갑을 GIWA Sepolia로 전환해 주세요.", "Please switch your wallet to GIWA Sepolia.")}
                 </p>
               )}
               {!me && (
                 <p className="rounded-xl border border-dashed border-white/15 p-5 text-center text-sm text-white/40">
-                  지갑을 연결하면 거래에 참여할 수 있습니다
+                  {t("지갑을 연결하면 거래에 참여할 수 있습니다", "Connect a wallet to take part in this deal")}
                 </p>
               )}
 
@@ -308,12 +318,12 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                     })
                   }
                 >
-                  {busy === "fund" ? "락 처리 중" : `전세금 락 — ${fmtKRW(jeonse)}`}
+                  {busy === "fund" ? t("락 처리 중", "Locking") : t(`전세금 락 — ${fmtKRW(jeonse)}`, `Lock deposit — ${fmtKRW(jeonse)}`)}
                 </button>
               )}
               {state === 0 && !isTenantIn && me && (
                 <p className="text-sm leading-relaxed text-white/40">
-                  신규 세입자의 전세금 락을 기다리는 중입니다.
+                  {t("신규 세입자의 전세금 락을 기다리는 중입니다.", "Waiting for the incoming tenant to lock the deposit.")}
                 </p>
               )}
 
@@ -334,13 +344,14 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                     }
                   >
                     {busy === "bridge"
-                      ? "선지급 처리 중"
-                      : `보증금 미리 받기 — ${fmtKRW((refund * 9950n) / 10000n)}`}
+                      ? t("선지급 처리 중", "Advancing")
+                      : t(`보증금 미리 받기 — ${fmtKRW((refund * 9950n) / 10000n)}`, `Get refund early — ${fmtKRW((refund * 9950n) / 10000n)}`)}
                   </button>
                   <p className="text-xs leading-relaxed text-white/30">
-                    다음 세입자의 전세금이 이미 락되어 있으므로, 브리지 풀이
-                    보증금을 즉시 선지급합니다 (수수료 0.5%). 정산일에 풀이
-                    자동으로 상환받습니다.
+                    {t(
+                      "다음 세입자의 전세금이 이미 락되어 있으므로, 브리지 풀이 보증금을 즉시 선지급합니다 (수수료 0.5%). 정산일에 풀이 자동으로 상환받습니다.",
+                      "Because the next tenant deposit is already locked, the bridge pool advances your refund instantly (0.5% fee) and gets repaid automatically at settlement."
+                    )}
                   </p>
                 </div>
               )}
@@ -355,13 +366,15 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                     )
                   }
                 >
-                  {busy === "settle" ? "정산 중" : "연쇄 정산 실행 — 한 트랜잭션"}
+                  {busy === "settle" ? t("정산 중", "Settling") : t("연쇄 정산 실행 — 한 트랜잭션", "Execute settlement — one transaction")}
                 </button>
               )}
               {state === 1 && !canSettle && (
                 <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-sm leading-relaxed text-emerald-300">
-                  전세금 {fmtKRW(jeonse)}이 락되었습니다. 정산일이 되면 누구나
-                  정산을 실행할 수 있습니다.
+                  {t(
+                    `전세금 ${fmtKRW(jeonse)}이 락되었습니다. 정산일이 되면 누구나 정산을 실행할 수 있습니다.`,
+                    `${fmtKRW(jeonse)} is locked. Once the settlement date arrives, anyone can execute settlement.`
+                  )}
                 </p>
               )}
 
@@ -375,7 +388,7 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                     )
                   }
                 >
-                  {busy === "claim" ? "수령 중" : `${fmtKRW(claimable)} 수령`}
+                  {busy === "claim" ? t("수령 중", "Claiming") : t(`${fmtKRW(claimable)} 수령`, `Claim ${fmtKRW(claimable)}`)}
                 </button>
               )}
 
@@ -390,10 +403,10 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                   }
                 >
                   {iApprovedCancel
-                    ? "취소 동의 완료 — 상대방 대기"
+                    ? t("취소 동의 완료 — 상대방 대기", "Cancel approved — awaiting counterparty")
                     : busy === "cancel"
-                      ? "처리 중"
-                      : "상호 취소 동의"}
+                      ? t("처리 중", "Processing")
+                      : t("상호 취소 동의", "Approve mutual cancel")}
                 </button>
               )}
               {state === 0 && isLandlord && (
@@ -406,18 +419,18 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
                     )
                   }
                 >
-                  {busy === "cancel" ? "처리 중" : "에스크로 취소"}
+                  {busy === "cancel" ? t("처리 중", "Processing") : t("에스크로 취소", "Cancel escrow")}
                 </button>
               )}
 
               {state === 2 && claimable === 0n && (
                 <p className="rounded-xl border border-indigo-400/20 bg-indigo-400/5 p-4 text-center text-sm text-indigo-300">
-                  정산이 완료된 에스크로입니다.
+                  {t("정산이 완료된 에스크로입니다.", "This escrow has been settled.")}
                 </p>
               )}
               {state === 3 && (
                 <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-white/40">
-                  취소된 에스크로입니다.
+                  {t("취소된 에스크로입니다.", "This escrow was cancelled.")}
                 </p>
               )}
 
