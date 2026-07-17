@@ -9,7 +9,7 @@
 
 Built on **GIWA Sepolia** · UPBIT × GIWA GASOK Builder Program
 
-[데모](https://ieum-six.vercel.app) · [익스플로러](https://sepolia-explorer.giwa.io) · [컨트랙트](#-배포-주소-giwa-sepolia)
+[데모](https://ieum-protocol.vercel.app) · [익스플로러](https://sepolia-explorer.giwa.io) · [컨트랙트](#-배포-주소-giwa-sepolia)
 
 </div>
 
