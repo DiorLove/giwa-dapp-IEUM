@@ -14,6 +14,8 @@ import {
 } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { AnimatedNumber, FadeUp, useMounted } from "@/components/Motion";
+import { GuideSteps } from "@/components/Guide";
+import { InfoTip } from "@/components/InfoTip";
 import { useLang } from "@/lib/i18n";
 
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
@@ -77,10 +79,18 @@ export default function AppHome() {
         {/* Page head */}
         <FadeUp className="flex flex-col gap-6 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">Dashboard</p>
+            <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">
+              {t("온체인 계모임", "Gye Circles")}
+            </p>
             <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
               {t("계모임", "Gye Circles")}
             </h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/40">
+              {t(
+                "매 회차 전원이 같은 금액을 납입하고, 정해진 순번대로 한 명씩 곗돈(목돈)을 받아 가는 한국의 계입니다. 돈은 사람이 아니라 스마트 컨트랙트가 보관·지급하므로 계주가 들고 도망갈 수 없습니다.",
+                "Korea's rotating savings circle: every member pays the same amount each round, and one member takes the whole pot in turn. A smart contract — not a person — holds and pays the money, so no organizer can run off with it."
+              )}
+            </p>
           </div>
           <Link
             href="/create"
@@ -103,7 +113,15 @@ export default function AppHome() {
             </p>
           </div>
           <div className="bg-black p-6 transition-colors hover:bg-white/[0.02]">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/35">{t("내 참여", "My Circles")}</p>
+            <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
+              {t("내 참여", "My Circles")}
+              <InfoTip
+                text={t(
+                  "연결된 지갑이 멤버로 참여 중인 계모임 수입니다.",
+                  "Number of circles your connected wallet belongs to."
+                )}
+              />
+            </p>
             <p className="mt-2 text-3xl font-medium text-white tabular-nums">
               {mounted && address ? <AnimatedNumber value={myCount} /> : "—"}
             </p>
@@ -111,7 +129,15 @@ export default function AppHome() {
           <div className="bg-black p-6 transition-colors hover:bg-white/[0.02]">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.15em] text-white/35">{t("mKRW 잔액", "mKRW Balance")}</p>
+                <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
+                  {t("mKRW 잔액", "mKRW Balance")}
+                  <InfoTip
+                    text={t(
+                      "mKRW는 테스트용 모의 원화 토큰입니다. 실제 돈이 아니며, 옆의 '테스트 원화 발급' 버튼으로 언제든 무료 충전할 수 있어요. 납입·수령이 모두 이 잔액으로 이뤄집니다.",
+                      "mKRW is a mock Korean-won token for testing — not real money. Mint it for free anytime with the button beside. All payments and payouts use this balance."
+                    )}
+                  />
+                </p>
                 <p className="mt-2 text-3xl font-medium text-white tabular-nums">
                   {mounted && address ? (
                     <AnimatedNumber
@@ -141,6 +167,42 @@ export default function AppHome() {
           </div>
         </FadeUp>
 
+        {/* First-timer guide */}
+        <GuideSteps
+          id="gye"
+          title={t("계모임, 이렇게 진행돼요", "How a Gye circle works")}
+          steps={[
+            {
+              t: t("개설 · 초대", "Create & invite"),
+              d: t(
+                "인원·납입액·주기를 정해 계를 만들고, 초대 링크를 공유해 멤버를 모읍니다.",
+                "Set the members, amount and cadence, then share the invite link to gather people."
+              ),
+            },
+            {
+              t: t("순번 결정", "Set the order"),
+              d: t(
+                "정원이 차면 온체인 추첨 또는 전원 동의로 곗돈 받는 순서를 정합니다.",
+                "Once full, the payout order is set by on-chain lottery or unanimous approval."
+              ),
+            },
+            {
+              t: t("매 회차 전원 납입", "Everyone pays each round"),
+              d: t(
+                "순번과 관계없이 모든 멤버가 매 회차 같은 금액을 납입합니다. 컨트랙트가 보관해요.",
+                "Regardless of your turn, every member pays every round. The contract holds the funds."
+              ),
+            },
+            {
+              t: t("순번대로 수령", "Collect in turn"),
+              d: t(
+                "회차가 정산되면 그 회차 순번인 멤버에게 수령 버튼이 나타나고, 곗돈 전액이 지갑으로 들어옵니다.",
+                "When a round settles, the member whose turn it is gets a claim button and the full pot lands in their wallet."
+              ),
+            },
+          ]}
+        />
+
         {/* Kye table */}
         <FadeUp delay={0.16} className="mt-14">
           <div className="mb-4 flex items-center justify-between">
@@ -148,6 +210,12 @@ export default function AppHome() {
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-[11px] font-medium text-white/40">
               <Lock size={11} />
               {t("초대 전용", "Invite-only")}
+              <InfoTip
+                text={t(
+                  "계모임은 공개 목록에 노출되지 않습니다. 개설자가 보낸 초대 링크로 들어온 사람만 참여할 수 있어요.",
+                  "Circles are never listed publicly. Only people with the organizer's invite link can join."
+                )}
+              />
             </span>
           </div>
 

@@ -5,6 +5,7 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { parseUnits, decodeEventLog, isAddress } from "viem";
 import { JEONSE_FACTORY_ADDRESS, errMsg, jeonseFactoryAbi } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
+import { InfoTip } from "@/components/InfoTip";
 import { FadeUp } from "@/components/Motion";
 import { useLang } from "@/lib/i18n";
 
@@ -165,7 +166,15 @@ export default function JeonseCreate() {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <span className={label}>{t("정산일 (입주일)", "Settlement date (move-in day)")}</span>
+              <span className={`flex items-center gap-1.5 ${label}`}>
+                {t("정산일 (입주일)", "Settlement date (move-in day)")}
+                <InfoTip
+                  text={t(
+                    "이 시각이 지나면 누구나 정산을 실행할 수 있고, 보증금 반환과 잔금 지급이 동시에 확정됩니다. 보통 이사(입주) 날짜로 설정해요.",
+                    "After this time, anyone can trigger settlement — refund and balance finalize together. Usually set to the move-in date."
+                  )}
+                />
+              </span>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   onClick={() => setDemo10min(true)}

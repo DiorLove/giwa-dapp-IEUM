@@ -12,6 +12,8 @@ import {
 } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { AnimatedNumber, FadeUp } from "@/components/Motion";
+import { GuideSteps } from "@/components/Guide";
+import { InfoTip } from "@/components/InfoTip";
 import { useLang } from "@/lib/i18n";
 
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
@@ -83,12 +85,36 @@ export default function PoolPage() {
           className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-3"
         >
           {[
-            { k: t("풀 총자산", "Total Pool Assets"), v: totalAssets },
-            { k: t("선지급 중 (상환 예정)", "Advanced (Receivable)"), v: outstanding },
-            { k: t("내 예치 가치", "My Deposit Value"), v: myValue },
+            {
+              k: t("풀 총자산", "Total Pool Assets"),
+              v: totalAssets,
+              tip: t(
+                "모든 예치자의 자금과 쌓인 수수료 수익을 합한 풀 전체 규모입니다.",
+                "The pool's total size: every depositor's funds plus accrued fee income."
+              ),
+            },
+            {
+              k: t("선지급 중 (상환 예정)", "Advanced (Receivable)"),
+              v: outstanding,
+              tip: t(
+                "지금 세입자들에게 미리 나가 있는 보증금 총액입니다. 각 에스크로가 정산되면 풀로 자동 상환됩니다.",
+                "Refunds currently advanced to tenants. Each escrow automatically repays the pool at settlement."
+              ),
+            },
+            {
+              k: t("내 예치 가치", "My Deposit Value"),
+              v: myValue,
+              tip: t(
+                "내 지분을 지금 출금하면 받게 될 금액입니다. 수수료 수익이 쌓일수록 예치 원금보다 커집니다.",
+                "What you'd receive if you withdrew now. It grows past your principal as fee income accrues."
+              ),
+            },
           ].map((s) => (
             <div key={s.k} className="bg-black p-6">
-              <p className={label}>{s.k}</p>
+              <p className={`flex items-center gap-1.5 ${label}`}>
+                {s.k}
+                <InfoTip text={s.tip} />
+              </p>
               <p className="mt-2 text-3xl font-medium text-white tabular-nums">
                 <AnimatedNumber
                   value={Number(s.v / 10n ** 18n)}
@@ -98,6 +124,35 @@ export default function PoolPage() {
             </div>
           ))}
         </FadeUp>
+
+        {/* First-timer guide */}
+        <GuideSteps
+          id="pool"
+          title={t("브리지 풀, 이렇게 돌아가요", "How the Bridge Pool works")}
+          steps={[
+            {
+              t: t("mKRW 예치", "Deposit mKRW"),
+              d: t(
+                "풀에 예치하면 지분이 생기고, 풀의 수익을 지분만큼 나눠 갖습니다.",
+                "Depositing gives you shares — you earn the pool's income in proportion."
+              ),
+            },
+            {
+              t: t("보증금 선지급", "Advance refunds"),
+              d: t(
+                "풀은 다음 세입자의 전세금이 이미 락된 안전한 거래에만 보증금을 선지급하고 0.5% 수수료를 받습니다.",
+                "The pool advances refunds only on deals whose next deposit is already locked, earning a 0.5% fee."
+              ),
+            },
+            {
+              t: t("언제든 출금", "Withdraw anytime"),
+              d: t(
+                "선지급 중이 아닌 유동성은 언제든 현재 지분 가치로 출금할 수 있습니다.",
+                "Liquidity not out on advances can be withdrawn anytime at current share value."
+              ),
+            },
+          ]}
+        />
 
         <FadeUp delay={0.16} className="mt-14 grid grid-cols-1 gap-8 lg:grid-cols-2">
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8">

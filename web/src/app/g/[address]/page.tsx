@@ -14,6 +14,8 @@ import {
 } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { MulleWheel } from "@/components/MulleWheel";
+import { StateFlow } from "@/components/Guide";
+import { InfoTip } from "@/components/InfoTip";
 import { FadeUp, SwapIn } from "@/components/Motion";
 import { giwaSepolia } from "@/lib/chain";
 import { useLang } from "@/lib/i18n";
@@ -166,6 +168,12 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
   const roundEndTs = startTime + (round + 1) * roundDuration;
   const roundEnded = state === 1 && now >= roundEndTs;
   const isOrganizer = me && organizer && me.toLowerCase() === organizer.toLowerCase();
+  // 이번 회차 수령자와 내 순번 (진행 중일 때만 의미 있음)
+  const recipient = order[round] as string | undefined;
+  const iAmRecipient = !!me && recipient?.toLowerCase() === me.toLowerCase();
+  const myTurn = me ? order.findIndex((o) => o.toLowerCase() === me.toLowerCase()) : -1;
+  // 라이프사이클: 모집 → 순번 결정 → 회차 진행 → 완주
+  const flowActive = state === 0 ? (full ? 1 : 0) : state === 1 ? 2 : 4;
   const primaryBtn =
     "pressable h-12 w-full rounded-full text-sm font-semibold disabled:opacity-40";
   const label = "text-xs uppercase tracking-[0.15em] text-white/35";
@@ -235,21 +243,64 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
           </div>
         </FadeUp>
 
+        {/* Lifecycle */}
+        {state !== 3 && (
+          <FadeUp delay={0.04} className="mb-8">
+            <StateFlow
+              steps={[
+                t("멤버 모집", "Recruiting"),
+                t("순번 결정", "Order draw"),
+                t("회차 진행", "Rounds"),
+                t("완주", "Complete"),
+              ]}
+              active={flowActive}
+            />
+          </FadeUp>
+        )}
+
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_400px]">
           {/* Left: overview */}
           <FadeUp delay={0.08} className="flex flex-col gap-10">
             <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-4">
               {[
-                { k: t("인원", "Members"), v: `${members.length} / ${maxMembers}` },
-                { k: t("회차당 곗돈", "Pot per round"), v: fmtKRW(contribution * BigInt(maxMembers || 0)) },
-                { k: t("보증금", "Deposit"), v: deposit > 0n ? fmtKRW(deposit) : t("없음", "None") },
+                {
+                  k: t("인원", "Members"),
+                  v: `${members.length} / ${maxMembers}`,
+                  tip: t(
+                    "현재 참여 인원 / 정원. 총 회차 수는 정원과 같아서 전원이 한 번씩 곗돈을 받으면 계가 끝납니다.",
+                    "Current members / capacity. Rounds equal capacity — the circle ends once everyone has collected once."
+                  ),
+                },
+                {
+                  k: t("회차당 곗돈", "Pot per round"),
+                  v: fmtKRW(contribution * BigInt(maxMembers || 0)),
+                  tip: t(
+                    "전원이 한 회차에 납입한 금액의 합계입니다. 매 회차 그 회차 순번인 멤버 한 명이 전액을 받습니다.",
+                    "The sum everyone pays in one round. Each round, the member whose turn it is receives it all."
+                  ),
+                },
+                {
+                  k: t("보증금", "Deposit"),
+                  v: deposit > 0n ? fmtKRW(deposit) : t("없음", "None"),
+                  tip: t(
+                    "중도 미납·이탈에 대비해 참여할 때 맡기는 담보금입니다. 끝까지 완주하면 전액 돌려받습니다.",
+                    "Collateral held when you join, protecting against missed payments. Fully refunded when the circle completes."
+                  ),
+                },
                 {
                   k: t("진행", "Progress"),
                   v: state === 1 ? `${round + 1} / ${maxMembers}` : state === 2 ? t("완료", "Done") : "—",
+                  tip: t(
+                    "현재 회차 / 전체 회차. 회차가 끝날 때마다 정산을 거쳐 다음 회차로 넘어갑니다.",
+                    "Current round / total rounds. Each round ends with a settlement before the next begins."
+                  ),
                 },
               ].map((s) => (
                 <div key={s.k} className="bg-black p-5">
-                  <p className={label}>{s.k}</p>
+                  <p className={`flex items-center gap-1.5 ${label}`}>
+                    {s.k}
+                    {s.tip && <InfoTip text={s.tip} />}
+                  </p>
                   <p className="mt-2 text-lg font-medium text-white tabular-nums">{s.v}</p>
                 </div>
               ))}
@@ -423,6 +474,29 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
               </div>
             )}
 
+            {/* 이번 회차 요약: 누가 받는 회차이고, 나는 언제 받는지 */}
+            {state === 1 && isMember && (
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-xs leading-relaxed text-white/45">
+                <p>
+                  {t("이번 회차 수령자", "This round's recipient")} —{" "}
+                  <span className="font-mono text-white/70">
+                    {recipient ? shortAddr(recipient) : "—"}
+                  </span>
+                  {iAmRecipient && (
+                    <span className="ml-1.5 rounded-full border border-emerald-400/30 px-2 py-0.5 text-[10px] text-emerald-300">
+                      {t("나", "you")}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-1.5">
+                  {t(
+                    `순번과 관계없이 매 회차 전원이 납입해요. 내 순번(${myTurn + 1}번째) 회차가 정산되면 이 자리에 수령 버튼이 나타납니다.`,
+                    `Everyone pays every round, regardless of turn. When your round (#${myTurn + 1}) settles, a claim button will appear right here.`
+                  )}
+                </p>
+              </div>
+            )}
+
             {state === 1 && isMember && !iPaid && !roundEnded && (
               <button
                 disabled={!!busy}
@@ -440,31 +514,47 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
             )}
 
             {roundEnded && (
-              <button
-                disabled={!!busy}
-                className={`${primaryBtn} border border-white/15 text-white hover:border-white/30`}
-                onClick={() =>
-                  run("settle", () =>
-                    writeContractAsync({ address: kye, abi: mulleAbi, functionName: "settle" })
-                  )
-                }
-              >
-                {busy === "settle" ? t("정산 중", "Settling") : t("회차 정산 실행 — 호출 보상 0.1%", "Settle round — 0.1% caller reward")}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  disabled={!!busy}
+                  className={`${primaryBtn} border border-white/15 text-white hover:border-white/30`}
+                  onClick={() =>
+                    run("settle", () =>
+                      writeContractAsync({ address: kye, abi: mulleAbi, functionName: "settle" })
+                    )
+                  }
+                >
+                  {busy === "settle" ? t("정산 중", "Settling") : t("회차 정산 실행 — 호출 보상 0.1%", "Settle round — 0.1% caller reward")}
+                </button>
+                <p className="text-xs leading-relaxed text-white/30">
+                  {t(
+                    "마감된 회차를 확정해 이번 순번에게 곗돈을 지급하고 다음 회차를 시작합니다. 누구나 실행할 수 있고, 실행한 사람이 곗돈의 0.1%를 보상으로 받아요.",
+                    "Finalizes the ended round: pays the pot to this turn's member and starts the next round. Anyone can run it and earns 0.1% of the pot."
+                  )}
+                </p>
+              </div>
             )}
 
             {claimable > 0n && (
-              <button
-                disabled={!!busy}
-                className={`${primaryBtn} bg-white text-black`}
-                onClick={() =>
-                  run("claim", () =>
-                    writeContractAsync({ address: kye, abi: mulleAbi, functionName: "claim" })
-                  )
-                }
-              >
-                {busy === "claim" ? t("수령 중", "Claiming") : t(`${fmtKRW(claimable)} 수령`, `Claim ${fmtKRW(claimable)}`)}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  disabled={!!busy}
+                  className={`${primaryBtn} bg-white text-black`}
+                  onClick={() =>
+                    run("claim", () =>
+                      writeContractAsync({ address: kye, abi: mulleAbi, functionName: "claim" })
+                    )
+                  }
+                >
+                  {busy === "claim" ? t("수령 중", "Claiming") : t(`${fmtKRW(claimable)} 수령`, `Claim ${fmtKRW(claimable)}`)}
+                </button>
+                <p className="text-xs leading-relaxed text-white/30">
+                  {t(
+                    "수령하면 내 지갑의 mKRW 잔액으로 들어갑니다. 잔액은 계모임 홈 상단에서 확인할 수 있어요.",
+                    "Claimed funds go straight to your wallet's mKRW balance — visible at the top of the Gye home."
+                  )}
+                </p>
+              </div>
             )}
 
             {state === 2 && claimable === 0n && (

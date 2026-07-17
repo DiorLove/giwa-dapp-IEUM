@@ -6,6 +6,7 @@ import { parseUnits, decodeEventLog } from "viem";
 import { FACTORY_ADDRESS, errMsg, factoryAbi } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { Dropdown } from "@/components/Dropdown";
+import { InfoTip } from "@/components/InfoTip";
 import { FadeUp } from "@/components/Motion";
 import { useLang } from "@/lib/i18n";
 
@@ -142,7 +143,15 @@ export default function CreatePage() {
                 <Dropdown value={round} options={roundOptions} onChange={setRound} />
               </div>
               <div className="flex flex-col gap-3">
-                <span className={label}>{t("보증금", "Security deposit")}</span>
+                <span className={`flex items-center gap-1.5 ${label}`}>
+                  {t("보증금", "Security deposit")}
+                  <InfoTip
+                    text={t(
+                      "멤버가 참여할 때 맡기는 담보금입니다. 중간에 납입을 안 하고 이탈하는 '계 깨짐'을 막아 주고, 끝까지 완주하면 전액 돌려받습니다.",
+                      "Collateral each member locks when joining. It deters mid-way dropouts, and is fully refunded when the circle completes."
+                    )}
+                  />
+                </span>
                 <Dropdown
                   value={depositRounds}
                   options={depositOptions}

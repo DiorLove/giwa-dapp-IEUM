@@ -15,6 +15,8 @@ import {
 } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { AnimatedNumber, FadeUp, useMounted } from "@/components/Motion";
+import { GuideSteps } from "@/components/Guide";
+import { InfoTip } from "@/components/InfoTip";
 import { useLang } from "@/lib/i18n";
 import { WalletModal } from "@/components/WalletModal";
 
@@ -118,8 +120,14 @@ export default function JeonseList() {
             </p>
           </div>
           <div className="bg-black p-6">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/35">
+            <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
               {t("락 자금 (TVL)", "Locked Funds (TVL)")}
+              <InfoTip
+                text={t(
+                  "현재 에스크로에 잠겨(락) 정산일을 기다리는 전세금의 총합입니다. 락된 돈은 정산 전까지 누구도 꺼낼 수 없어요.",
+                  "Total deposits currently locked in escrows awaiting settlement. Locked funds can't be touched by anyone until settlement."
+                )}
+              />
             </p>
             <p className="mt-2 text-3xl font-medium text-white tabular-nums">
               <AnimatedNumber
@@ -129,8 +137,14 @@ export default function JeonseList() {
             </p>
           </div>
           <div className="bg-black p-6">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/35">
+            <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
               {t("브리지 풀 자산", "Bridge Pool Assets")}
+              <InfoTip
+                text={t(
+                  "이사 날짜가 어긋날 때 기존 세입자에게 보증금을 미리 지급해 주는 유동성 풀의 총자산입니다. 누구나 예치해 선지급 수수료(0.5%)를 수익으로 받을 수 있어요.",
+                  "Total assets in the liquidity pool that advances refunds when moving dates misalign. Anyone can deposit and earn the 0.5% advance fee."
+                )}
+              />
             </p>
             <p className="mt-2 text-3xl font-medium text-white tabular-nums">
               <AnimatedNumber
@@ -140,6 +154,42 @@ export default function JeonseList() {
             </p>
           </div>
         </FadeUp>
+
+        {/* First-timer guide */}
+        <GuideSteps
+          id="jeonse"
+          title={t("전세 에스크로, 이렇게 진행돼요", "How a Jeonse escrow works")}
+          steps={[
+            {
+              t: t("집주인이 개설", "Landlord creates"),
+              d: t(
+                "두 세입자의 지갑 주소, 전세금·반환 보증금, 정산일(입주일)을 정해 에스크로를 만듭니다.",
+                "The landlord sets both tenants' addresses, the amounts, and the settlement (move-in) date."
+              ),
+            },
+            {
+              t: t("전세금 락", "Deposit locked"),
+              d: t(
+                "새로 들어올 세입자가 전세금을 컨트랙트에 잠급니다. 정산 전까지 누구도 손댈 수 없어요.",
+                "The incoming tenant locks the deposit in the contract. No one can touch it before settlement."
+              ),
+            },
+            {
+              t: t("미리 받기 (선택)", "Early refund (optional)"),
+              d: t(
+                "이사가 급한 기존 세입자는 브리지 풀에서 보증금을 즉시 선지급받을 수 있어요 (수수료 0.5%).",
+                "If moving is urgent, the outgoing tenant can get the refund advanced instantly from the pool (0.5% fee)."
+              ),
+            },
+            {
+              t: t("정산일 자동 정산", "Auto settle"),
+              d: t(
+                "정산일이 되면 보증금 반환·집주인 잔금이 한 트랜잭션으로 동시에 확정됩니다.",
+                "On settlement day the refund and the landlord's balance finalize together in one transaction."
+              ),
+            },
+          ]}
+        />
 
         <FadeUp delay={0.16} className="mt-14">
           <div className="mb-4 flex items-center justify-between">

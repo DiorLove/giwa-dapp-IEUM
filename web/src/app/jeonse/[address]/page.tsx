@@ -15,6 +15,8 @@ import {
   shortAddr,
 } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
+import { StateFlow } from "@/components/Guide";
+import { InfoTip } from "@/components/InfoTip";
 import { FadeUp, SwapIn } from "@/components/Motion";
 import { giwaSepolia } from "@/lib/chain";
 import { useLang } from "@/lib/i18n";
@@ -294,11 +296,33 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
           </div>
         </FadeUp>
 
+        {/* Lifecycle */}
+        {state !== 3 && (
+          <FadeUp delay={0.04} className="mb-8">
+            <StateFlow
+              steps={[
+                t("전세금 락", "Lock deposit"),
+                t("정산일 대기", "Await settlement"),
+                t("정산 완료", "Settled"),
+              ]}
+              active={state === 0 ? 0 : state === 1 ? 1 : 3}
+            />
+          </FadeUp>
+        )}
+
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_400px]">
           <FadeUp delay={0.08} className="flex flex-col gap-10">
             {/* 정산 구조 시각화 */}
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.01] p-8">
-              <p className={`${label} mb-6`}>{t("원자적 연쇄 정산 구조", "Atomic chain settlement")}</p>
+              <p className={`mb-6 flex items-center gap-1.5 ${label}`}>
+                {t("원자적 연쇄 정산 구조", "Atomic chain settlement")}
+                <InfoTip
+                  text={t(
+                    "'원자적'이란 세 사람의 몫이 한 트랜잭션에서 전부 처리되거나 전부 취소된다는 뜻입니다. 한쪽만 돈을 보내고 못 받는 상황이 원천적으로 불가능해요.",
+                    "'Atomic' means all three parties' shares execute in one transaction — or none do. It's impossible for one side to pay and not get paid."
+                  )}
+                />
+              </p>
               <div className="flex flex-col gap-3">
                 {parties.map((p) => (
                   <div
@@ -329,7 +353,15 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
 
             {/* 문서 앵커 */}
             <section>
-              <h2 className={`${label} mb-4`}>{t("문서 앵커 — 서류 하이패스", "Document anchors — paperwork hi-pass")}</h2>
+              <h2 className={`mb-4 flex items-center gap-1.5 ${label}`}>
+                {t("문서 앵커 — 서류 하이패스", "Document anchors — paperwork hi-pass")}
+                <InfoTip
+                  text={t(
+                    "계약서 같은 서류의 '지문'(해시)만 체인에 기록해 나중에 위·변조를 증명할 수 있게 합니다. 원본 파일은 체인에 올라가지 않고, 이 거래의 당사자만 열람할 수 있어요.",
+                    "Only a document's 'fingerprint' (hash) is recorded on-chain, proving it was never altered. The file itself never goes on-chain and is viewable only by parties to this deal."
+                  )}
+                />
+              </h2>
               <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
                 {docCount === 0 && (
                   <p className="px-6 py-10 text-center text-sm text-white/30">
