@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useAccount, useConnect, useReadContract, useReadContracts } from "wagmi";
+import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { ArrowUpRight, Plus } from "lucide-react";
 import {
   JEONSE_FACTORY_ADDRESS,
@@ -16,6 +16,7 @@ import {
 import { AppNav } from "@/components/AppNav";
 import { AnimatedNumber, FadeUp, useMounted } from "@/components/Motion";
 import { useLang } from "@/lib/i18n";
+import { WalletModal } from "@/components/WalletModal";
 
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
 
@@ -29,8 +30,8 @@ const STATE_META: { label: [string, string]; cls: string }[] = [
 export default function JeonseList() {
   const { t } = useLang();
   const { address } = useAccount();
-  const { connect, connectors } = useConnect();
   const [view, setView] = useState<"mine" | "all">("mine");
+  const [walletOpen, setWalletOpen] = useState(false);
   const mounted = useMounted();
   const { data: all } = useReadContract({
     address: JEONSE_FACTORY_ADDRESS,
@@ -184,11 +185,12 @@ export default function JeonseList() {
                   )}
                 </p>
                 <button
-                  onClick={() => connect({ connector: connectors[0] })}
+                  onClick={() => setWalletOpen(true)}
                   className="pressable rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
                 >
                   {t("지갑 연결", "Connect Wallet")}
                 </button>
+                <WalletModal open={walletOpen} onClose={() => setWalletOpen(false)} />
               </div>
             )}
             {(view === "all" || address) && escrows.length === 0 && (

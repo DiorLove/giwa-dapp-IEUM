@@ -42,7 +42,11 @@ contract BridgePool {
 
     function deposit(uint256 amount) external {
         require(amount > 0, "amount=0");
-        uint256 minted = totalShares == 0 ? amount : (amount * totalShares) / totalAssets();
+        // 가상 오프셋(+1): 최초 예치자 지분 인플레이션(도네이션) 공격 무력화.
+        // 빈 풀에서도 1:1 로 동작하고, 이후엔 도네이션으로 지분값을 부풀려도
+        // 공격 비용이 탈취액을 항상 웃돌아 경제성이 사라진다.
+        uint256 minted = (amount * (totalShares + 1)) / (totalAssets() + 1);
+        require(minted > 0, "zero shares"); // 내림으로 0주 발행되는 예치는 되돌린다
         totalShares += minted;
         shares[msg.sender] += minted;
         token.safeTransferFrom(msg.sender, address(this), amount);
@@ -51,7 +55,7 @@ contract BridgePool {
 
     function withdraw(uint256 shareAmount) external {
         require(shareAmount > 0 && shares[msg.sender] >= shareAmount, "bad shares");
-        uint256 amount = (shareAmount * totalAssets()) / totalShares;
+        uint256 amount = (shareAmount * (totalAssets() + 1)) / (totalShares + 1);
         require(token.balanceOf(address(this)) >= amount, "liquidity in use");
         shares[msg.sender] -= shareAmount;
         totalShares -= shareAmount;

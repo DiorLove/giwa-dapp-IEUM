@@ -111,7 +111,7 @@ export function Hero() {
           </div>
           <div className="flex items-center gap-3">
             <a
-              href={explorerUrl("address/0x5622e3B98c04507E2185667131C75344Fe077012")}
+              href={explorerUrl("address/0xeec2bc9B6B9E281b2FafDEB38D40719547a95eC2")}
               target="_blank"
               rel="noreferrer"
               className="hidden text-sm font-medium text-white/80 transition-colors hover:text-white sm:block"

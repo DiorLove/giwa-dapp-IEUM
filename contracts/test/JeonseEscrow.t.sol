@@ -222,12 +222,47 @@ contract JeonseEscrowTest is Test {
         uint256 cut = (fee * POOL_CUT_BPS) / 10000;
         vm.prank(lp);
         pool.withdraw(shares);
-        assertEq(krw.balanceOf(lp), 30 * 10_000_000e18 + fee - cut);
+        // 가상 오프셋(+1)으로 인해 최대 몇 wei의 반올림 먼지가 풀에 남을 수 있다
+        assertApproxEqAbs(krw.balanceOf(lp), 30 * 10_000_000e18 + fee - cut, 2);
 
         // 프로토콜은 적립분 수취 가능
         vm.prank(TREASURY);
         pool.claimFees();
         assertEq(krw.balanceOf(TREASURY), cut);
+    }
+
+    // ---- 최초 예치자 지분 인플레이션 공격 방어 ----
+
+    function test_InflationAttackIsUnprofitable() public {
+        address attacker = makeAddr("attacker");
+        address victim = makeAddr("victim");
+        vm.startPrank(attacker);
+        for (uint256 i = 0; i < 60; i++) krw.faucet();
+        krw.approve(address(pool), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(victim);
+        for (uint256 i = 0; i < 30; i++) krw.faucet();
+        krw.approve(address(pool), type(uint256).max);
+        vm.stopPrank();
+
+        // 1) 공격자가 1 wei 예치로 부트스트랩 시도
+        vm.prank(attacker);
+        pool.deposit(1);
+        // 2) 큰 금액을 직접 송금해 지분값 부풀리기(도네이션)
+        vm.prank(attacker);
+        krw.transfer(address(pool), 300_000_000e18);
+
+        // 3) 피해자가 예치 — 가상 오프셋 덕에 0주가 아니라 정상 지분을 받는다
+        uint256 vDeposit = 200_000_000e18;
+        vm.prank(victim);
+        pool.deposit(vDeposit);
+        uint256 vShares = pool.shares(victim);
+        assertGt(vShares, 0, "victim must receive shares");
+
+        // 4) 피해자가 곧바로 전량 출금해도 예치금 대부분을 회수한다(탈취 불가)
+        vm.prank(victim);
+        pool.withdraw(vShares);
+        assertGe(krw.balanceOf(victim), vDeposit - 2, "victim funds must be safe");
     }
 
     // ---- 프로토콜 정산 수수료 ----
