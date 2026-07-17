@@ -1,8 +1,7 @@
 "use client";
-import { useState } from "react";
 import Link from "next/link";
 import { useAccount, useReadContract, useReadContracts, useWriteContract } from "wagmi";
-import { ArrowUpRight, Plus } from "lucide-react";
+import { ArrowUpRight, Plus, Lock } from "lucide-react";
 import {
   FACTORY_ADDRESS,
   LEGACY_FACTORY_ADDRESS,
@@ -30,7 +29,6 @@ export default function AppHome() {
   const { t } = useLang();
   const { address } = useAccount();
   const { writeContract, isPending } = useWriteContract();
-  const [view, setView] = useState<"mine" | "all">("mine");
 
   const mounted = useMounted();
   const { data: all } = useReadContract({
@@ -99,7 +97,7 @@ export default function AppHome() {
           className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-3"
         >
           <div className="bg-black p-6 transition-colors hover:bg-white/[0.02]">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/35">{t("전체 계", "Total Circles")}</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-white/35">{t("누적 개설", "Total Created")}</p>
             <p className="mt-2 text-3xl font-medium text-white tabular-nums">
               <AnimatedNumber value={mulles.length} />
             </p>
@@ -146,25 +144,11 @@ export default function AppHome() {
         {/* Kye table */}
         <FadeUp delay={0.16} className="mt-14">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-[0.15em] text-white/35">{t("계 목록", "Circle List")}</h2>
-            <div className="flex items-center rounded-full border border-white/10 p-0.5 text-xs font-medium">
-              {(
-                [
-                  ["mine", t("내 계", "My Circles")],
-                  ["all", t("전체", "All")],
-                ] as const
-              ).map(([v, l]) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`pressable rounded-full px-4 py-1.5 transition-colors ${
-                    view === v ? "bg-white text-black" : "text-white/40 hover:text-white"
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
+            <h2 className="text-sm uppercase tracking-[0.15em] text-white/35">{t("내 계 목록", "My Circles")}</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-[11px] font-medium text-white/40">
+              <Lock size={11} />
+              {t("초대 전용", "Invite-only")}
+            </span>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
@@ -178,22 +162,25 @@ export default function AppHome() {
               <span />
             </div>
 
-            {mulles.length === 0 && (
+            {!address && (
               <p className="px-6 py-16 text-center text-sm text-white/30">
-                {t("아직 개설된 계가 없습니다. 첫 계를 열어보세요.", "No circles yet. Open the first one.")}
+                {t("지갑을 연결하면 내가 개설·참여 중인 계가 표시됩니다.", "Connect a wallet to see the circles you organize or belong to.")}
               </p>
             )}
 
-            {view === "mine" && !address && mulles.length > 0 && (
-              <p className="px-6 py-16 text-center text-sm text-white/30">
-                {t("지갑을 연결하면 내가 참여 중인 계만 모아서 보여드려요.", "Connect a wallet to see only the circles you belong to.")}
-              </p>
-            )}
+            {address &&
+              mulles.filter((m) => infos?.[mulles.indexOf(m) * 5 + 4]?.result === true).length === 0 && (
+                <p className="px-6 py-16 text-center text-sm text-white/30">
+                  {t(
+                    "참여 중인 계가 없습니다. 초대 링크로 참여하거나 새 계를 개설하세요.",
+                    "No circles yet. Join via an invite link, or open a new one."
+                  )}
+                </p>
+              )}
 
             {[...mulles]
               .reverse()
               .filter((m) => {
-                if (view === "all") return true;
                 if (!address) return false;
                 return infos?.[mulles.indexOf(m) * 5 + 4]?.result === true;
               })

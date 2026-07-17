@@ -2,7 +2,7 @@
 import { use, useState } from "react";
 import { useAccount, usePublicClient, useReadContracts, useWriteContract } from "wagmi";
 import { maxUint256 } from "viem";
-import { ArrowUpRight, Check, Copy } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Share2 } from "lucide-react";
 import {
   MOCKKRW_ADDRESS,
   errMsg,
@@ -42,6 +42,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
 
   const { data, refetch } = useReadContracts({
     contracts: [
@@ -175,6 +176,26 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
     setTimeout(() => setCopied(false), 1500);
   }
 
+  async function shareKye() {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const shareData = {
+      title: t("이음 계모임 초대", "IEUM Circle invite"),
+      text: t("이음에서 이 계모임에 참여해 주세요.", "Join this savings circle on IEUM."),
+      url,
+    };
+    try {
+      if (navigator.share && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch {
+      /* 공유 취소 → 링크 복사 폴백 */
+    }
+    await navigator.clipboard.writeText(url);
+    setShared(true);
+    setTimeout(() => setShared(false), 1600);
+  }
+
   return (
     <div className="min-h-screen bg-black">
       <AppNav />
@@ -194,15 +215,24 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
               <span className="ml-2 text-lg text-white/35">{t("/ 회", "/ round")}</span>
             </h1>
           </div>
-          <a
-            href={explorerUrl(`address/${kye}`)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 self-start text-sm text-white/40 transition-colors hover:text-white md:self-auto"
-          >
-            <span className="font-mono">{shortAddr(kye)}</span>
-            <ArrowUpRight size={14} />
-          </a>
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <button
+              onClick={shareKye}
+              className="pressable inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-2 text-sm font-medium text-white/80 transition-colors hover:border-white/30 hover:text-white"
+            >
+              {shared ? <Check size={14} className="text-emerald-300" /> : <Share2 size={14} />}
+              {shared ? t("링크 복사됨", "Link copied") : t("멤버에게 공유", "Share with members")}
+            </button>
+            <a
+              href={explorerUrl(`address/${kye}`)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] px-3.5 py-2 text-sm text-white/40 transition-colors hover:text-white"
+            >
+              <span className="font-mono">{shortAddr(kye)}</span>
+              <ArrowUpRight size={14} />
+            </a>
+          </div>
         </FadeUp>
 
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_400px]">
@@ -323,7 +353,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
               </div>
             )}
 
-            {state === 0 && full && orderMode === 0 && (
+            {state === 0 && full && orderMode === 0 && isOrganizer && (
               <button
                 disabled={!!busy}
                 className={`${primaryBtn} bg-white text-black`}
@@ -333,8 +363,16 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
                   )
                 }
               >
-                {busy === "start" ? t("추첨 중", "Drawing") : t("온체인 추첨으로 시작", "Start with on-chain lottery")}
+                {busy === "start" ? t("추첨 중", "Drawing") : t("개설자 추첨 — 온체인 제비뽑기 시작", "Organizer draw — start on-chain lottery")}
               </button>
+            )}
+            {state === 0 && full && orderMode === 0 && !isOrganizer && (
+              <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm leading-relaxed text-white/50">
+                {t(
+                  "정원이 찼습니다. 개설자가 온체인 추첨을 시작하면 순번이 정해집니다.",
+                  "The circle is full. The organizer will start the on-chain draw to set the payout order."
+                )}
+              </p>
             )}
 
             {state === 0 && full && orderMode === 1 && isOrganizer && !orderProposed && (
