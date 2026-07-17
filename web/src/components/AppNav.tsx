@@ -6,10 +6,10 @@ import { ConnectButton } from "@/components/ConnectButton";
 import { Onboarding, OPEN_TOUR_EVENT } from "@/components/Onboarding";
 import { LangToggle, useLang } from "@/lib/i18n";
 
-const LINKS: { href: string; label: [string, string] }[] = [
-  { href: "/jeonse", label: ["전세 에스크로", "Jeonse Escrow"] },
-  { href: "/pool", label: ["브리지 풀", "Bridge Pool"] },
-  { href: "/app", label: ["계모임", "Gye Circles"] },
+const LINKS: { href: string; label: [string, string]; tour: string }[] = [
+  { href: "/jeonse", label: ["전세 에스크로", "Jeonse Escrow"], tour: "nav-jeonse" },
+  { href: "/pool", label: ["브리지 풀", "Bridge Pool"], tour: "nav-pool" },
+  { href: "/app", label: ["계모임", "Gye Circles"], tour: "nav-gye" },
 ];
 
 export function AppNav() {
@@ -27,7 +27,8 @@ export function AppNav() {
               <Link
                 key={l.href}
                 href={l.href}
-                className={`text-sm transition-colors hover:text-white ${
+                data-tour={l.tour}
+                className={`rounded-lg px-1 text-sm transition-colors hover:text-white ${
                   pathname.startsWith(l.href) ? "text-white" : "text-white/60"
                 }`}
               >
@@ -57,6 +58,7 @@ export function AppNav() {
             href="https://faucet.giwa.io"
             target="_blank"
             rel="noreferrer"
+            data-tour="gas"
             title="GIWA Sepolia 가스 ETH 받기"
             className="pressable hidden items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/50 transition-colors hover:border-white/25 hover:text-white sm:flex"
           >
@@ -68,7 +70,9 @@ export function AppNav() {
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             GIWA Sepolia
           </span>
-          <ConnectButton />
+          <span data-tour="wallet" className="inline-flex rounded-full">
+            <ConnectButton />
+          </span>
         </div>
       </div>
       <Onboarding />

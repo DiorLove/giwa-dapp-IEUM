@@ -14,17 +14,19 @@ import {
 } from "@/lib/contracts";
 import { AppNav } from "@/components/AppNav";
 import { AnimatedNumber, FadeUp } from "@/components/Motion";
+import { useLang } from "@/lib/i18n";
 
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
 
-const STATE_META = [
-  { label: "자금 대기", cls: "border-amber-400/30 text-amber-300" },
-  { label: "락 완료", cls: "border-emerald-400/30 text-emerald-300" },
-  { label: "정산 완료", cls: "border-indigo-400/30 text-indigo-300" },
-  { label: "취소됨", cls: "border-white/15 text-white/40" },
+const STATE_META: { label: [string, string]; cls: string }[] = [
+  { label: ["자금 대기", "Awaiting funds"], cls: "border-amber-400/30 text-amber-300" },
+  { label: ["락 완료", "Funded"], cls: "border-emerald-400/30 text-emerald-300" },
+  { label: ["정산 완료", "Settled"], cls: "border-indigo-400/30 text-indigo-300" },
+  { label: ["취소됨", "Cancelled"], cls: "border-white/15 text-white/40" },
 ];
 
 export default function JeonseList() {
+  const { t } = useLang();
   const { address } = useAccount();
   const { connect, connectors } = useConnect();
   const [view, setView] = useState<"mine" | "all">("mine");
@@ -74,12 +76,13 @@ export default function JeonseList() {
               Jeonse Escrow
             </p>
             <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
-              전세 에스크로
+              {t("전세 에스크로", "Jeonse Escrow")}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/40">
-              다음 세입자의 전세금을 온체인에 락하고, 정산일에 단 한 번의
-              트랜잭션으로 보증금 반환과 잔금 지급을 동시에 실행합니다. 이사
-              날짜가 어긋나도 거래는 깨지지 않습니다.
+              {t(
+                "다음 세입자의 전세금을 온체인에 락하고, 정산일에 단 한 번의 트랜잭션으로 보증금 반환과 잔금 지급을 동시에 실행합니다. 이사 날짜가 어긋나도 거래는 깨지지 않습니다.",
+                "Lock the incoming tenant's deposit on-chain, then execute the refund and the balance in a single transaction on settlement day. Deals no longer break when moving dates misalign."
+              )}
             </p>
           </div>
           <Link
@@ -87,7 +90,7 @@ export default function JeonseList() {
             className="pressable inline-flex h-11 items-center gap-2 self-start rounded-full bg-white px-6 text-sm font-semibold text-black md:self-auto"
           >
             <Plus size={16} />
-            에스크로 개설
+            {t("에스크로 개설", "New Escrow")}
           </Link>
         </FadeUp>
 
@@ -96,13 +99,17 @@ export default function JeonseList() {
           className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-3"
         >
           <div className="bg-black p-6">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/35">전체 에스크로</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-white/35">
+              {t("전체 에스크로", "Total Escrows")}
+            </p>
             <p className="mt-2 text-3xl font-medium text-white tabular-nums">
               <AnimatedNumber value={escrows.length} />
             </p>
           </div>
           <div className="bg-black p-6">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/35">락 자금 (TVL)</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-white/35">
+              {t("락 자금 (TVL)", "Locked Funds (TVL)")}
+            </p>
             <p className="mt-2 text-3xl font-medium text-white tabular-nums">
               <AnimatedNumber
                 value={Number(lockedTotal / 10n ** 18n)}
@@ -111,7 +118,9 @@ export default function JeonseList() {
             </p>
           </div>
           <div className="bg-black p-6">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/35">브리지 풀 자산</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-white/35">
+              {t("브리지 풀 자산", "Bridge Pool Assets")}
+            </p>
             <p className="mt-2 text-3xl font-medium text-white tabular-nums">
               <AnimatedNumber
                 value={Number(((poolAssets as bigint | undefined) ?? 0n) / 10n ** 18n)}
@@ -124,13 +133,13 @@ export default function JeonseList() {
         <FadeUp delay={0.16} className="mt-14">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm uppercase tracking-[0.15em] text-white/35">
-              에스크로 목록
+              {t("에스크로 목록", "Escrow List")}
             </h2>
             <div className="flex items-center rounded-full border border-white/10 p-0.5 text-xs font-medium">
               {(
                 [
-                  ["mine", "내 거래"],
-                  ["all", "전체"],
+                  ["mine", t("내 거래", "My Deals")],
+                  ["all", t("전체", "All")],
                 ] as const
               ).map(([v, l]) => (
                 <button
@@ -147,29 +156,32 @@ export default function JeonseList() {
           </div>
           <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
             <div className="hidden grid-cols-[1fr_150px_150px_150px_120px_48px] gap-4 border-b border-white/[0.06] px-6 py-3 text-xs uppercase tracking-[0.12em] text-white/30 md:grid">
-              <span>컨트랙트</span>
-              <span className="text-right">신규 전세금</span>
-              <span className="text-right">반환 보증금</span>
-              <span className="text-right">정산일</span>
-              <span className="text-right">상태</span>
+              <span>{t("컨트랙트", "Contract")}</span>
+              <span className="text-right">{t("신규 전세금", "New Deposit")}</span>
+              <span className="text-right">{t("반환 보증금", "Refund")}</span>
+              <span className="text-right">{t("정산일", "Settlement")}</span>
+              <span className="text-right">{t("상태", "Status")}</span>
               <span />
             </div>
             {view === "mine" && !address && (
               <div className="flex flex-col items-center gap-4 px-6 py-16">
                 <p className="text-sm text-white/40">
-                  지갑을 연결하면 내가 당사자인 거래만 모아서 보여드려요.
+                  {t(
+                    "지갑을 연결하면 내가 당사자인 거래만 모아서 보여드려요.",
+                    "Connect a wallet to see only the deals you're a party to."
+                  )}
                 </p>
                 <button
                   onClick={() => connect({ connector: connectors[0] })}
                   className="pressable rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black"
                 >
-                  지갑 연결
+                  {t("지갑 연결", "Connect Wallet")}
                 </button>
               </div>
             )}
             {(view === "all" || address) && escrows.length === 0 && (
               <p className="px-6 py-16 text-center text-sm text-white/30">
-                아직 개설된 에스크로가 없습니다.
+                {t("아직 개설된 에스크로가 없습니다.", "No escrows have been created yet.")}
               </p>
             )}
             {(view === "all" || address) &&
@@ -189,8 +201,10 @@ export default function JeonseList() {
                 if (view === "mine" && escrows.length > 0 && rows.length === 0)
                   return (
                     <p className="px-6 py-16 text-center text-sm text-white/30">
-                      이 지갑이 당사자인 거래가 아직 없어요. 에스크로를
-                      개설하거나 전체 탭을 확인해 보세요.
+                      {t(
+                        "이 지갑이 당사자인 거래가 아직 없어요. 에스크로를 개설하거나 전체 탭을 확인해 보세요.",
+                        "This wallet isn't a party to any deals yet. Create an escrow or check the All tab."
+                      )}
                     </p>
                   );
                 return rows.map((e, idx) => {
@@ -220,12 +234,12 @@ export default function JeonseList() {
                     {shortAddr(e)}
                     {mine && (
                       <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] tracking-wide text-white/50">
-                        내 거래
+                        {t("내 거래", "Mine")}
                       </span>
                     )}
                     {bridged && (
                       <span className="rounded-full border border-sky-400/30 px-2 py-0.5 text-[10px] tracking-wide text-sky-300">
-                        브리지
+                        {t("브리지", "Bridged")}
                       </span>
                     )}
                   </span>
@@ -240,7 +254,7 @@ export default function JeonseList() {
                   </span>
                   <span className="hidden text-right md:block">
                     <span className={`rounded-full border px-2.5 py-1 text-xs ${meta.cls}`}>
-                      {meta.label}
+                      {t(meta.label[0], meta.label[1])}
                     </span>
                   </span>
                   <span className="hidden justify-self-end text-white/25 transition-all group-hover:translate-x-0.5 group-hover:text-white/60 md:block">
