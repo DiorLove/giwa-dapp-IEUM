@@ -110,12 +110,12 @@ export default function PoolPage() {
               ),
             },
           ].map((s) => (
-            <div key={s.k} className="bg-black p-6">
+            <div key={s.k} className="bg-black p-5 md:p-6">
               <p className={`flex items-center gap-1.5 ${label}`}>
                 {s.k}
                 <InfoTip text={s.tip} />
               </p>
-              <p className="mt-2 text-3xl font-medium text-white tabular-nums">
+              <p className="mt-2 text-2xl font-medium text-white tabular-nums md:text-3xl">
                 <AnimatedNumber
                   value={Number(s.v / 10n ** 18n)}
                   format={(n) => "₩" + n.toLocaleString("ko-KR")}

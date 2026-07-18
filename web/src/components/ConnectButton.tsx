@@ -1,22 +1,29 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { giwaSepolia } from "@/lib/chain";
 import { shortAddr } from "@/lib/contracts";
 import { useLang } from "@/lib/i18n";
 import { WalletModal } from "@/components/WalletModal";
-import { AccountSheet } from "@/components/AccountSheet";
+import { OPEN_MYPAGE_EVENT } from "@/components/MyPage";
+
+export const OPEN_WALLET_EVENT = "ieum:open-wallet";
 
 export function ConnectButton() {
   const { t } = useLang();
   const { address, isConnected, chainId } = useAccount();
-  const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [modalOpen, setModalOpen] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
   // SSR과 클라이언트의 지갑 상태가 달라 생기는 하이드레이션 불일치 방지
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // 햄버거 메뉴 등에서 지갑 연결 모달을 열 수 있도록 이벤트 수신
+  useEffect(() => {
+    const onOpen = () => setModalOpen(true);
+    window.addEventListener(OPEN_WALLET_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_WALLET_EVENT, onOpen);
+  }, []);
 
   if (!mounted)
     return (
@@ -47,20 +54,12 @@ export function ConnectButton() {
     );
 
   return (
-    <>
-      <button
-        onClick={() => setSheetOpen(true)}
-        className="liquid-glass glass-hover pressable rounded-full px-4 py-2 text-xs font-semibold text-white/70"
-        title={t("지갑 상세", "Wallet details")}
-      >
-        {shortAddr(address!)}
-      </button>
-      <AccountSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        address={address!}
-        onDisconnect={() => disconnect()}
-      />
-    </>
+    <button
+      onClick={() => window.dispatchEvent(new Event(OPEN_MYPAGE_EVENT))}
+      className="liquid-glass glass-hover pressable rounded-full px-4 py-2 text-xs font-semibold text-white/70"
+      title={t("마이페이지", "My Page")}
+    >
+      {shortAddr(address!)}
+    </button>
   );
 }

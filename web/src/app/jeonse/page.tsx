@@ -111,15 +111,15 @@ export default function JeonseList() {
           delay={0.08}
           className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-3"
         >
-          <div className="bg-black p-6">
+          <div className="bg-black p-5 md:p-6">
             <p className="text-xs uppercase tracking-[0.15em] text-white/35">
               {t("전체 에스크로", "Total Escrows")}
             </p>
-            <p className="mt-2 text-3xl font-medium text-white tabular-nums">
+            <p className="mt-2 text-2xl font-medium text-white tabular-nums md:text-3xl">
               <AnimatedNumber value={escrows.length} />
             </p>
           </div>
-          <div className="bg-black p-6">
+          <div className="bg-black p-5 md:p-6">
             <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
               {t("락 자금 (TVL)", "Locked Funds (TVL)")}
               <InfoTip
@@ -129,14 +129,14 @@ export default function JeonseList() {
                 )}
               />
             </p>
-            <p className="mt-2 text-3xl font-medium text-white tabular-nums">
+            <p className="mt-2 text-2xl font-medium text-white tabular-nums md:text-3xl">
               <AnimatedNumber
                 value={Number(lockedTotal / 10n ** 18n)}
                 format={(n) => "₩" + n.toLocaleString("ko-KR")}
               />
             </p>
           </div>
-          <div className="bg-black p-6">
+          <div className="bg-black p-5 md:p-6">
             <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
               {t("브리지 풀 자산", "Bridge Pool Assets")}
               <InfoTip
@@ -146,7 +146,7 @@ export default function JeonseList() {
                 )}
               />
             </p>
-            <p className="mt-2 text-3xl font-medium text-white tabular-nums">
+            <p className="mt-2 text-2xl font-medium text-white tabular-nums md:text-3xl">
               <AnimatedNumber
                 value={Number(((poolAssets as bigint | undefined) ?? 0n) / 10n ** 18n)}
                 format={(n) => "₩" + n.toLocaleString("ko-KR")}
@@ -294,15 +294,15 @@ export default function JeonseList() {
                   style={{ animationDelay: `${Math.min(idx * 40, 320)}ms` }}
                   className="stagger-item group grid grid-cols-2 items-center gap-3 border-b border-white/[0.06] px-6 py-5 transition-colors last:border-b-0 hover:bg-white/[0.03] md:grid-cols-[1fr_150px_150px_150px_120px_48px] md:gap-4"
                 >
-                  <span className="flex items-center gap-3 font-mono text-sm text-white/70">
-                    {shortAddr(e)}
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm text-white/70">
+                    <span className="shrink-0">{shortAddr(e)}</span>
                     {mine && (
-                      <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] tracking-wide text-white/50">
+                      <span className="shrink-0 whitespace-nowrap rounded-full border border-white/15 px-2 py-0.5 text-[10px] tracking-wide text-white/50">
                         {t("내 거래", "Mine")}
                       </span>
                     )}
                     {bridged && (
-                      <span className="rounded-full border border-sky-400/30 px-2 py-0.5 text-[10px] tracking-wide text-sky-300">
+                      <span className="shrink-0 whitespace-nowrap rounded-full border border-sky-400/30 px-2 py-0.5 text-[10px] tracking-wide text-sky-300">
                         {t("브리지", "Bridged")}
                       </span>
                     )}

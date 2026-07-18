@@ -106,13 +106,13 @@ export default function AppHome() {
           delay={0.08}
           className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] sm:grid-cols-3"
         >
-          <div className="bg-black p-6 transition-colors hover:bg-white/[0.02]">
+          <div className="bg-black p-5 transition-colors hover:bg-white/[0.02] md:p-6">
             <p className="text-xs uppercase tracking-[0.15em] text-white/35">{t("누적 개설", "Total Created")}</p>
-            <p className="mt-2 text-3xl font-medium text-white tabular-nums">
+            <p className="mt-2 text-2xl font-medium text-white tabular-nums md:text-3xl">
               <AnimatedNumber value={mulles.length} />
             </p>
           </div>
-          <div className="bg-black p-6 transition-colors hover:bg-white/[0.02]">
+          <div className="bg-black p-5 transition-colors hover:bg-white/[0.02] md:p-6">
             <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
               {t("내 참여", "My Circles")}
               <InfoTip
@@ -122,11 +122,11 @@ export default function AppHome() {
                 )}
               />
             </p>
-            <p className="mt-2 text-3xl font-medium text-white tabular-nums">
+            <p className="mt-2 text-2xl font-medium text-white tabular-nums md:text-3xl">
               {mounted && address ? <AnimatedNumber value={myCount} /> : "—"}
             </p>
           </div>
-          <div className="bg-black p-6 transition-colors hover:bg-white/[0.02]">
+          <div className="bg-black p-5 transition-colors hover:bg-white/[0.02] md:p-6">
             <div className="flex items-start justify-between">
               <div>
                 <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-white/35">
@@ -138,7 +138,7 @@ export default function AppHome() {
                     )}
                   />
                 </p>
-                <p className="mt-2 text-3xl font-medium text-white tabular-nums">
+                <p className="mt-2 text-2xl font-medium text-white tabular-nums md:text-3xl">
                   {mounted && address ? (
                     <AnimatedNumber
                       value={Number((balance ?? 0n) / 10n ** 18n)}
