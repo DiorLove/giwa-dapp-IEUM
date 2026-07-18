@@ -10,7 +10,7 @@ contract Deploy is Script {
     function run() external {
         vm.startBroadcast();
         MockKRW krw = new MockKRW();
-        MulleFactory factory = new MulleFactory(IERC20(address(krw)));
+        MulleFactory factory = new MulleFactory(IERC20(address(krw)), msg.sender, 10);
         vm.stopBroadcast();
         console.log("MockKRW:     ", address(krw));
         console.log("MulleFactory:", address(factory));
