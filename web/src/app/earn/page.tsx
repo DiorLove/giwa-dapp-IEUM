@@ -391,7 +391,15 @@ export default function EarnPage() {
               <span className="text-white/70 tabular-nums">{fmtKRW(borrowable)}</span>
               {cashLimited && (
                 <span className="ml-1 text-[11px] text-white/30">
-                  {t("(풀 유동성 한도)", "(pool liquidity cap)")}
+                  {cashAvail === 0n
+                    ? t(
+                        `· 담보 한도 ${fmtKRW(myMaxBorrow)} — 풀에 예치가 없어 대출 불가, 먼저 예치하세요`,
+                        `· collateral allows ${fmtKRW(myMaxBorrow)} — pool is empty, supply first`
+                      )
+                    : t(
+                        `· 담보 한도 ${fmtKRW(myMaxBorrow)} (풀 유동성 한도)`,
+                        `· collateral allows ${fmtKRW(myMaxBorrow)} (capped by pool cash)`
+                      )}
                 </span>
               )}
               {myDebt > 0n && (
