@@ -186,8 +186,8 @@ export function Hero() {
         className="relative z-10 flex justify-center gap-4 pb-12"
       >
         {[
-          { Icon: Code2, href: "https://github.com", label: "GitHub" },
-          { Icon: AtSign, href: "https://x.com", label: "X" },
+          { Icon: Code2, href: "https://github.com/DiorLove/giwa-dapp-IEUM", label: "GitHub" },
+          { Icon: AtSign, href: "https://x.com/ieum_giwa", label: "X" },
           { Icon: Globe, href: explorerUrl(""), label: "Explorer" },
         ].map(({ Icon, href, label }) => (
           <a

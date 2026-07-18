@@ -1,14 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   useAccount,
   useBalance,
   useDisconnect,
+  usePublicClient,
   useReadContracts,
   useWriteContract,
 } from "wagmi";
+import { parseAbiItem } from "viem";
 import {
+  ArrowDownLeft,
   ArrowUpRight,
   Check,
   Copy,
@@ -16,6 +19,7 @@ import {
   Landmark,
   LogOut,
   Plus,
+  Sparkles,
   Users,
   Wallet,
 } from "lucide-react";
@@ -57,14 +61,114 @@ const ESCROW_STATE: { label: [string, string]; cls: string }[] = [
   { label: ["취소됨", "Cancelled"], cls: "border-white/15 text-white/40" },
 ];
 
+type Flow = {
+  dir: "in" | "out" | "mint";
+  counterparty: string;
+  value: bigint;
+  hash: string;
+  ts?: number;
+};
+
+const TRANSFER = parseAbiItem(
+  "event Transfer(address indexed from, address indexed to, uint256 value)"
+);
+
 export default function MyPage() {
   const { t } = useLang();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
   const { disconnect } = useDisconnect();
   const { writeContract, isPending: minting } = useWriteContract();
   const [copied, setCopied] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
+  const [flows, setFlows] = useState<Flow[]>([]);
+  const [flowsLoading, setFlowsLoading] = useState(false);
+
+  // mKRW Transfer 로그에서 자금 흐름 이력 구성 (받음/보냄/발급)
+  useEffect(() => {
+    if (!address || !publicClient) return;
+    let cancelled = false;
+    (async () => {
+      setFlowsLoading(true);
+      try {
+        // GIWA RPC 는 getLogs 범위를 제한하므로(약 10만 블록) 최신부터 청크로 역순 조회.
+        // 최근 이력 12건을 채우거나 최대 청크 수에 도달하면 멈춘다.
+        const CHUNK = 90_000n;
+        const MAX_CHUNKS = 8;
+        const latest = await publicClient.getBlockNumber();
+        const logs: {
+          blockNumber: bigint | null;
+          logIndex: number | null;
+          transactionHash: `0x${string}` | null;
+          args: { from?: `0x${string}`; to?: `0x${string}`; value?: bigint };
+        }[] = [];
+        let hi = latest;
+        for (let c = 0; c < MAX_CHUNKS && logs.length < 12; c++) {
+          const lo = hi > CHUNK ? hi - CHUNK : 0n;
+          const [ins, outs] = await Promise.all([
+            publicClient.getLogs({
+              address: MOCKKRW_ADDRESS,
+              event: TRANSFER,
+              args: { to: address },
+              fromBlock: lo,
+              toBlock: hi,
+            }),
+            publicClient.getLogs({
+              address: MOCKKRW_ADDRESS,
+              event: TRANSFER,
+              args: { from: address },
+              fromBlock: lo,
+              toBlock: hi,
+            }),
+          ]);
+          logs.push(...ins, ...outs);
+          if (lo === 0n) break;
+          hi = lo - 1n;
+        }
+
+        logs.sort((a, b) => {
+          const ba = a.blockNumber ?? 0n;
+          const bb = b.blockNumber ?? 0n;
+          if (ba !== bb) return bb > ba ? 1 : -1;
+          return (b.logIndex ?? 0) - (a.logIndex ?? 0);
+        });
+        const top = logs.slice(0, 12);
+
+        // 블록 타임스탬프 (중복 제거 후 배치 조회)
+        const blockNums = [
+          ...new Set(top.map((l) => l.blockNumber).filter((b): b is bigint => b != null)),
+        ];
+        const blocks = await Promise.all(
+          blockNums.map((bn) => publicClient.getBlock({ blockNumber: bn }))
+        );
+        const tsMap = new Map(blocks.map((b) => [b.number, Number(b.timestamp)]));
+
+        const meLower = address.toLowerCase();
+        const items: Flow[] = top.map((l) => {
+          const from = (l.args.from as string) ?? "";
+          const to = (l.args.to as string) ?? "";
+          const incoming = to.toLowerCase() === meLower;
+          const isMint = from === ZERO;
+          return {
+            dir: isMint && incoming ? "mint" : incoming ? "in" : "out",
+            counterparty: incoming ? from : to,
+            value: (l.args.value as bigint) ?? 0n,
+            hash: l.transactionHash ?? "",
+            ts: l.blockNumber != null ? tsMap.get(l.blockNumber) : undefined,
+          };
+        });
+        if (!cancelled) setFlows(items);
+      } catch {
+        if (!cancelled) setFlows([]);
+      } finally {
+        if (!cancelled) setFlowsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [address, publicClient]);
 
   const me = address ?? ZERO;
   const enabled = !!address;
@@ -347,6 +451,73 @@ export default function MyPage() {
                   <span className="truncate">{a.label}</span>
                 </Link>
               ))}
+            </FadeUp>
+
+            {/* 자금 흐름 (mKRW 이력) */}
+            <FadeUp delay={0.18} className="mt-14">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-sm uppercase tracking-[0.15em] text-white/35">
+                  {t("자금 흐름 (mKRW)", "Money Flow (mKRW)")}
+                  {flows.length > 0 && <span className="ml-2 text-white/25">{flows.length}</span>}
+                </h2>
+                <a
+                  href={explorerUrl(`address/${address}`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="pressable text-xs text-white/40 hover:text-white"
+                >
+                  {t("전체 내역 →", "Full history →")}
+                </a>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
+                {flowsLoading && flows.length === 0 && <div className="skeleton m-4 h-16" />}
+                {!flowsLoading && flows.length === 0 && (
+                  <p className="px-6 py-14 text-center text-sm text-white/30">
+                    {t("아직 자금 이동 내역이 없습니다.", "No money movements yet.")}
+                  </p>
+                )}
+                {flows.map((f, i) => {
+                  const inbound = f.dir === "in" || f.dir === "mint";
+                  const meta =
+                    f.dir === "mint"
+                      ? { icon: Sparkles, label: t("테스트 발급", "Minted"), cls: "text-amber-300" }
+                      : f.dir === "in"
+                        ? { icon: ArrowDownLeft, label: t("받음", "Received"), cls: "text-emerald-300" }
+                        : { icon: ArrowUpRight, label: t("보냄", "Sent"), cls: "text-white/70" };
+                  return (
+                    <a
+                      key={`${f.hash}-${i}`}
+                      href={explorerUrl(`tx/${f.hash}`)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3.5 transition-colors last:border-b-0 hover:bg-white/[0.03] md:px-6"
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] ${meta.cls}`}
+                        >
+                          <meta.icon size={15} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm text-white/80">{meta.label}</span>
+                          <span className="block truncate font-mono text-[11px] text-white/35">
+                            {f.dir === "mint"
+                              ? t("파우셋", "Faucet")
+                              : `${inbound ? t("보낸 사람", "from") : t("받는 사람", "to")} ${shortAddr(f.counterparty)}`}
+                            {f.ts ? ` · ${new Date(f.ts * 1000).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""}
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        className={`shrink-0 text-sm font-medium tabular-nums ${inbound ? "text-emerald-300" : "text-white/70"}`}
+                      >
+                        {inbound ? "+" : "−"}
+                        {fmtKRW(f.value)}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
             </FadeUp>
 
             {/* 내 계모임 */}
