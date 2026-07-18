@@ -7,7 +7,6 @@ import type { Connector } from "wagmi";
 import { ArrowUpRight, Smartphone, ShieldCheck, Wallet, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { errMsg } from "@/lib/contracts";
-import { WALLET_MARKS } from "@/components/walletMarks";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 
@@ -15,26 +14,29 @@ const EASE = [0.23, 1, 0.32, 1] as const;
  *  인앱 브라우저 안에서는 지갑이 주입되어 정상적으로 연결된다. undefined = 딥링크 미지원 */
 type DeepLink = (fullUrl: string, host: string, path: string) => string;
 
-/** EVM 지원 지갑 목록 — EIP-6963 rdns 로 설치된 익스텐션과 매칭 */
+/** EVM 지원 지갑 목록 — key 는 /public/wallets/<key>.png 공식 로고 파일명과 매칭 */
 const WALLETS: {
+  key: string;
   name: string;
   rdns: string[];
   url: string;
   deepLink?: DeepLink;
 }[] = [
   {
+    key: "metamask",
     name: "MetaMask",
     rdns: ["io.metamask", "io.metamask.flask"],
     url: "https://metamask.io/download",
-    deepLink: (_full, host, path) => `https://metamask.app.link/dapp/${host}${path}`,
   },
   {
+    key: "okx",
     name: "OKX Wallet",
     rdns: ["com.okex.wallet"],
     url: "https://web3.okx.com",
     deepLink: (full) => `okx://wallet/dapp/url?dappUrl=${encodeURIComponent(full)}`,
   },
   {
+    key: "phantom",
     name: "Phantom",
     rdns: ["app.phantom"],
     url: "https://phantom.com/download",
@@ -44,13 +46,15 @@ const WALLETS: {
       )}`,
   },
   {
+    key: "binance",
     name: "Binance Wallet",
     rdns: ["com.binance.wallet", "com.binance.w3w"],
     url: "https://www.binance.com/en/web3wallet",
     deepLink: (full) => `https://app.binance.com/cedefi/dapp-link?url=${encodeURIComponent(full)}`,
   },
-  { name: "Rabby Wallet", rdns: ["io.rabby"], url: "https://rabby.io" },
+  { key: "rabby", name: "Rabby Wallet", rdns: ["io.rabby"], url: "https://rabby.io" },
   {
+    key: "rainbow",
     name: "Rainbow",
     rdns: ["me.rainbow"],
     url: "https://rainbow.me",
@@ -77,9 +81,15 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // EIP-6963 으로 감지된 커넥터를 rdns 기준으로 매칭
+  // MetaMask SDK / WalletConnect 커넥터 (모바일에서 앱으로 넘어가 인증 요청을 띄운다)
+  const mmSDK = connectors.find((c) => c.id === "metaMaskSDK");
+  const wc = connectors.find((c) => c.id === "walletConnect");
+
+  // EIP-6963 으로 감지된 익스텐션을 rdns 기준으로 매칭 (+ MetaMask 는 SDK 폴백)
   const rows = useMemo(() => {
-    const discovered = connectors.filter((c) => c.id !== "injected");
+    const discovered = connectors.filter(
+      (c) => c.id !== "injected" && c.id !== "metaMaskSDK" && c.id !== "walletConnect"
+    );
     return WALLETS.map((w) => ({
       ...w,
       connector: discovered.find((c) => w.rdns.includes(c.id)) as Connector | undefined,
@@ -103,9 +113,15 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
     }
   }
 
-  /** 지갑 버튼 클릭 처리: 감지되면 연결, 모바일이면 앱 딥링크, 그 외엔 설치 페이지 */
+  /** 지갑 버튼 클릭 처리:
+   *  1) 익스텐션 감지 → 바로 연결
+   *  2) MetaMask → SDK 로 연결 (모바일이면 앱으로 넘어가 인증 요청이 뜬다)
+   *  3) 그 외 모바일 → WalletConnect(있으면) 또는 앱 딥링크
+   *  4) 데스크톱 미설치 → 설치 페이지 */
   function handlePick(w: (typeof rows)[number]) {
     if (w.connector) return pick(w.connector, w.name);
+    if (w.key === "metamask" && mmSDK) return pick(mmSDK, w.name);
+    if (isMobile && wc) return pick(wc, w.name);
     if (isMobile && w.deepLink) {
       const full = window.location.href;
       const host = window.location.host;
@@ -153,7 +169,9 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                 <div className="mt-5 flex flex-col gap-1.5">
                   {rows.map((w, i) => {
                     const installed = !!w.connector;
-                    const canApp = isMobile && !!w.deepLink; // 모바일: 앱으로 열기 가능
+                    // 모바일에서 앱으로 연결/열기 가능한지 (MetaMask SDK · WalletConnect · 딥링크)
+                    const canApp =
+                      isMobile && (w.key === "metamask" ? !!mmSDK : !!wc || !!w.deepLink);
                     return (
                       <motion.button
                         key={w.name}
@@ -164,18 +182,13 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                         onClick={() => handlePick(w)}
                         className="pressable group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left transition-colors hover:border-white/10 hover:bg-white/[0.04] disabled:opacity-40"
                       >
-                        {installed && w.connector!.icon ? (
-                          // EIP-6963 이 제공하는 지갑 공식 아이콘 (data URI)
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={w.connector!.icon}
-                            alt={w.name}
-                            className="h-8 w-8 rounded-lg"
-                          />
-                        ) : (
-                          // 브랜드 마크 폴백 — 모바일 등 미감지 상황에서도 항상 표시
-                          <span className="h-8 w-8 shrink-0">{WALLET_MARKS[w.name]}</span>
-                        )}
+                        {/* 번들된 공식 로고 — PC·모바일 동일하게 표시 */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/wallets/${w.key}.png`}
+                          alt={w.name}
+                          className="h-8 w-8 shrink-0 rounded-lg"
+                        />
                         <span className="flex-1">
                           <span className="block text-sm font-semibold text-white">
                             {busy === w.name ? t("연결 중…", "Connecting…") : w.name}
@@ -183,7 +196,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                           {!installed && (
                             <span className="block text-[11px] text-white/35">
                               {canApp
-                                ? t("앱에서 열기", "Open in app")
+                                ? t("앱에서 연결", "Connect in app")
                                 : t("미설치 — 설치 페이지 열기", "Not installed — open install page")}
                             </span>
                           )}
@@ -226,8 +239,8 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                   <p className="mt-4 flex items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] leading-relaxed text-white/40">
                     <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30" />
                     {t(
-                      "모바일 브라우저는 지갑 앱을 직접 감지할 수 없어요. 위 지갑을 누르면 해당 앱의 인앱 브라우저로 이 사이트가 열리고, 거기서 바로 연결됩니다.",
-                      "Mobile browsers can't detect wallet apps directly. Tapping a wallet opens this site inside that app's browser, where you can connect right away."
+                      "지갑을 누르면 해당 앱으로 넘어가 연결 요청이 뜹니다. 승인하면 이 화면으로 돌아와 연결이 완료돼요.",
+                      "Tapping a wallet opens its app with a connection request. Approve it and you'll return here connected."
                     )}
                   </p>
                 )}
