@@ -54,6 +54,7 @@ export default function EarnPage() {
       { address: METH_ADDRESS, abi: mockEthAbi, functionName: "balanceOf", args: [me ?? ZERO] },
       { address: ORACLE_ADDRESS, abi: oracleAbi, functionName: "price" },
       { address: EARN_ADDRESS, abi: earnAbi, functionName: "cash" },
+      { address: EARN_ADDRESS, abi: earnAbi, functionName: "bridgeOutstanding" },
     ],
     query: { refetchInterval: 5000 },
   });
@@ -74,6 +75,7 @@ export default function EarnPage() {
   const ethBal = (data?.[13]?.result as bigint | undefined) ?? 0n;
   const price = (data?.[14]?.result as bigint | undefined) ?? 0n;
   const cashAvail = (data?.[15]?.result as bigint | undefined) ?? 0n;
+  const bridgeOut = (data?.[16]?.result as bigint | undefined) ?? 0n;
   // 실제 대출 가능액 = min(담보 LTV 한도, 풀 현금)
   const borrowable = myMaxBorrow < cashAvail ? myMaxBorrow : cashAvail;
   const cashLimited = cashAvail < myMaxBorrow;
@@ -198,6 +200,28 @@ export default function EarnPage() {
               </p>
             </div>
           ))}
+        </FadeUp>
+
+        {/* 유동성 사용 내역: 대출 잔액 + 브리지 선지급 */}
+        <FadeUp delay={0.08} className="mt-3 flex flex-wrap gap-x-6 gap-y-1 px-1 text-xs text-white/40">
+          <span>
+            {t("대출 잔액", "Loans out")}{" "}
+            <span className="text-white/70 tabular-nums">{fmtKRW(totalBorrows)}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            {t("브리지 선지급 중 (상환 예정)", "Bridge advances (receivable)")}{" "}
+            <span className="text-sky-300 tabular-nums">{fmtKRW(bridgeOut)}</span>
+            <InfoTip
+              text={t(
+                "전세 정산일 사이 기존 세입자에게 미리 지급된 보증금 합계입니다. 각 에스크로가 정산되면 풀로 자동 상환되고, 수수료(0.5%)는 예치자·프로토콜 수익이 됩니다.",
+                "Total deposits advanced to outgoing tenants ahead of settlement. Each escrow repays the pool automatically at settlement; the 0.5% fee is supplier/protocol revenue."
+              )}
+            />
+          </span>
+          <span>
+            {t("가용 현금", "Available cash")}{" "}
+            <span className="text-white/70 tabular-nums">{fmtKRW(cashAvail)}</span>
+          </span>
         </FadeUp>
 
         {/* 내 포지션 */}
