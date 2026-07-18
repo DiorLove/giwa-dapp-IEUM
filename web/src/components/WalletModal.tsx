@@ -21,6 +21,7 @@ const WALLETS: {
   rdns: string[];
   url: string;
   deepLink?: DeepLink;
+  comingSoon?: boolean;
 }[] = [
   {
     key: "metamask",
@@ -60,6 +61,14 @@ const WALLETS: {
     url: "https://rainbow.me",
     deepLink: (full) => `https://rnbwapp.com/to/dapp/${full.replace(/^https?:\/\//, "")}`,
   },
+  {
+    // 두나무(업비트)의 GIWA Wallet — 정식 출시 전. 출시되면 comingSoon 해제 + rdns/딥링크만 채우면 됨
+    key: "giwa",
+    name: "GIWA Wallet",
+    rdns: ["io.giwa", "com.giwa.wallet"],
+    url: "https://giwa.io",
+    comingSoon: true,
+  },
 ];
 
 export function WalletModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -69,9 +78,13 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [mmInstalled, setMmInstalled] = useState(false);
   useEffect(() => {
     setMounted(true);
     setIsMobile(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+    // MetaMask 는 SDK 커넥터를 쓰면 EIP-6963 목록에서 빠지므로 window.ethereum 으로 직접 감지
+    const eth = (window as unknown as { ethereum?: { isMetaMask?: boolean; providers?: { isMetaMask?: boolean }[] } }).ethereum;
+    setMmInstalled(!!(eth && (eth.isMetaMask || eth.providers?.some((p) => p?.isMetaMask))));
   }, []);
 
   useEffect(() => {
@@ -168,44 +181,63 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                 </h2>
                 <div className="mt-5 flex flex-col gap-1.5">
                   {rows.map((w, i) => {
-                    const installed = !!w.connector;
+                    const isMM = w.key === "metamask";
+                    // MetaMask 는 SDK 로 연결되므로 window.ethereum 감지 결과를 함께 반영
+                    const installed = !!w.connector || (isMM && mmInstalled);
+                    const comingSoon = !!w.comingSoon && !installed;
                     // 모바일에서 앱으로 연결/열기 가능한지 (MetaMask SDK · WalletConnect · 딥링크)
-                    const canApp =
-                      isMobile && (w.key === "metamask" ? !!mmSDK : !!wc || !!w.deepLink);
+                    const canApp = isMobile && (isMM ? !!mmSDK : !!wc || !!w.deepLink);
+                    // 데스크톱에 확장이 없어도 MetaMask 는 SDK(QR)로 연결 가능
+                    const canConnectDesktop = !isMobile && isMM && !!mmSDK && !installed;
                     return (
                       <motion.button
                         key={w.name}
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 + i * 0.03, duration: 0.25, ease: EASE }}
-                        disabled={!!busy}
-                        onClick={() => handlePick(w)}
-                        className="pressable group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left transition-colors hover:border-white/10 hover:bg-white/[0.04] disabled:opacity-40"
+                        disabled={!!busy || comingSoon}
+                        onClick={() => !comingSoon && handlePick(w)}
+                        className={`pressable group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left transition-colors disabled:opacity-40 ${
+                          comingSoon
+                            ? "cursor-default"
+                            : "hover:border-white/10 hover:bg-white/[0.04]"
+                        }`}
                       >
                         {/* 번들된 공식 로고 — PC·모바일 동일하게 표시 */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/wallets/${w.key}.png`}
                           alt={w.name}
-                          className="h-8 w-8 shrink-0 rounded-lg"
+                          className={`h-8 w-8 shrink-0 rounded-lg ${comingSoon ? "opacity-45" : ""}`}
                         />
                         <span className="flex-1">
-                          <span className="block text-sm font-semibold text-white">
+                          <span
+                            className={`block text-sm font-semibold ${comingSoon ? "text-white/50" : "text-white"}`}
+                          >
                             {busy === w.name ? t("연결 중…", "Connecting…") : w.name}
                           </span>
-                          {!installed && (
+                          {!installed && !comingSoon && (
                             <span className="block text-[11px] text-white/35">
-                              {canApp
+                              {canApp || canConnectDesktop
                                 ? t("앱에서 연결", "Connect in app")
                                 : t("미설치 — 설치 페이지 열기", "Not installed — open install page")}
                             </span>
                           )}
+                          {comingSoon && (
+                            <span className="block text-[11px] text-white/30">
+                              {t("업비트 GIWA 지갑 — 출시 후 지원 예정", "Upbit's GIWA wallet — support coming after launch")}
+                            </span>
+                          )}
                         </span>
-                        {installed ? (
+                        {comingSoon ? (
+                          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-semibold text-white/40">
+                            {t("출시 예정", "Soon")}
+                          </span>
+                        ) : installed ? (
                           <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
                             {t("감지됨", "Detected")}
                           </span>
-                        ) : canApp ? (
+                        ) : canApp || canConnectDesktop ? (
                           <Smartphone className="h-4 w-4 text-white/30 transition-transform group-hover:translate-x-0.5" />
                         ) : (
                           <ArrowUpRight className="h-4 w-4 text-white/25 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
