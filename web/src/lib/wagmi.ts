@@ -34,14 +34,22 @@ export const config = createConfig({
         ]
       : []),
   ],
-  // 다중 탭/동시 접속 시 RPC 부하로 개별 eth_call 이 간헐 실패하는 것을 완화:
-  // - batch: 여러 호출을 하나의 JSON-RPC 배치로 묶어 요청 수를 줄이고 부분 실패를 줄임
-  // - retryCount/Delay: 일시적 실패를 자동 재시도
+  // ── 동시 접속·트랜잭션 시 화면이 0으로 깜빡이던 근본 원인 해결 ──────────────
+  // GIWA RPC 는 "한 요청에 담긴 호출 수"에 한도가 있어(약 20개 초과 시
+  // -32016 "over rate limit"), 요청 하나가 거부되면 그 안의 모든 read 가 함께
+  // 실패해 페이지 전체가 0/1970/₩0 으로 튀었다. 특히 트랜잭션 직후 모든 쿼리가
+  // 동시에 리페치되면서 수십 개의 호출이 한 배치로 뭉쳐 한도를 넘겼다.
+  //
+  // 1) Multicall3 집계: 여러 컨트랙트 read 를 단일 eth_call 로 묶는다.
+  //    (me/대시보드의 수십 개 read → 요청 서너 개로 축소, 한도에 여유)
+  batch: { multicall: { batchSize: 512, wait: 16 } },
   transports: {
+    // 2) JSON-RPC 배치는 요청당 최대 10개로 제한 → GIWA 한도(~20+)를 절대 안 넘김
+    // 3) retry: 일시적 rate-limit 도 지수 백오프로 재시도
     [giwaSepolia.id]: http(undefined, {
-      batch: { wait: 16 },
-      retryCount: 5,
-      retryDelay: 250,
+      batch: { batchSize: 10, wait: 20 },
+      retryCount: 4,
+      retryDelay: 500,
       timeout: 20_000,
     }),
   },

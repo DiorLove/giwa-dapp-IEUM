@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAccount, usePublicClient, useReadContracts, useWriteContract } from "wagmi";
-import { maxUint256, parseUnits } from "viem";
+import { formatUnits, maxUint256, parseUnits } from "viem";
 import {
   EARN_ADDRESS,
   METH_ADDRESS,
@@ -80,6 +80,28 @@ export default function EarnPage() {
   // 실제 대출 가능액 = min(담보 LTV 한도, 풀 현금)
   const borrowable = myMaxBorrow < cashAvail ? myMaxBorrow : cashAvail;
   const cashLimited = cashAvail < myMaxBorrow;
+
+  // ── 부분 출금/상환 계산 ─────────────────────────────
+  // 예치 출금: 입력 KRW → 지분(내 지분:가치 비례). 전량이면 반올림 오차 없이 myShares 그대로.
+  const sharesForWithdraw = (amtWei: bigint) => {
+    if (myShares === 0n || myValue === 0n) return 0n;
+    if (amtWei >= myValue) return myShares;
+    const s = (amtWei * myShares) / myValue;
+    return s > 0n ? s : 0n;
+  };
+  // 담보 안전 출금 한도 = 부채를 LTV 내로 유지하며 뺄 수 있는 최대 mETH
+  const borrowLimit = myDebt + myMaxBorrow; // = 담보가치 × LTV
+  const maxWithdrawColl = borrowLimit > 0n ? (myColl * myMaxBorrow) / borrowLimit : myColl;
+  // 상환 가능액 = min(부채, 지갑 잔액) — 잔액이 부족하면 그만큼만 상환
+  const repayable = myDebt < krwBal ? myDebt : krwBal;
+  // wei → 입력창용 문자열
+  const krwInt = (wei: bigint) => (wei / 10n ** 18n).toString();
+  const ethTrim = (wei: bigint, dp = 6) => {
+    const [i, f = ""] = formatUnits(wei, 18).split(".");
+    const cut = f.slice(0, dp).replace(/0+$/, "");
+    return cut ? `${i}.${cut}` : i;
+  };
+  const fill = "pressable tabular-nums text-white/40 transition-colors hover:text-white disabled:opacity-40";
 
   const hfNum = myDebt === 0n ? Infinity : Number(myHf) / 1e18;
   const hfLabel = myDebt === 0n ? "—" : hfNum.toFixed(2);
@@ -285,9 +307,20 @@ export default function EarnPage() {
                 {supplyApy.toFixed(2)}% APY
               </span>
             </div>
-            <p className="mt-2 text-sm text-white/40">
-              {t("보유 mKRW:", "mKRW:")} <span className="text-white/70 tabular-nums">{fmtKRW(krwBal)}</span>
-            </p>
+            {/* 클릭하면 입력창에 채워지는 최대값 (예치=지갑, 출금=내 예치) */}
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <button type="button" onClick={() => setSupplyAmt(krwInt(krwBal))} className={fill}>
+                {t("지갑", "Wallet")} <span className="text-white/70">{fmtKRW(krwBal)}</span>
+              </button>
+              <button
+                type="button"
+                disabled={myValue === 0n}
+                onClick={() => setSupplyAmt(krwInt(myValue))}
+                className={fill}
+              >
+                {t("내 예치", "Supplied")} <span className="text-white/70">{fmtKRW(myValue)}</span>
+              </button>
+            </div>
             <div className="relative mt-4">
               <input
                 type="text"
@@ -316,15 +349,16 @@ export default function EarnPage() {
                 {busy === "supply" ? t("예치 중", "Supplying") : t("예치", "Supply")}
               </button>
               <button
-                disabled={!!busy || myShares === 0n}
+                disabled={!!busy || myShares === 0n || Number(supplyAmt) <= 0}
                 onClick={() =>
-                  run("withdraw", () =>
-                    send("withdraw", [myShares])
-                  )
+                  run("withdraw", () => {
+                    const amt = parseUnits(supplyAmt || "0", 18);
+                    return send("withdraw", [sharesForWithdraw(amt)]);
+                  })
                 }
                 className={ghost}
               >
-                {busy === "withdraw" ? t("출금 중", "…") : t("전량 출금", "Withdraw all")}
+                {busy === "withdraw" ? t("출금 중", "…") : t("출금", "Withdraw")}
               </button>
             </div>
           </div>
@@ -335,12 +369,29 @@ export default function EarnPage() {
               <p className={label}>{t("담보 (Collateral)", "Collateral")}</p>
               <span className="text-[11px] text-white/40 tabular-nums">1 mETH = {priceKRW}</span>
             </div>
-            <p className="mt-2 text-sm text-white/40">
-              {t("보유 mETH:", "mETH:")}{" "}
-              <span className="text-white/70 tabular-nums">{(Number(ethBal) / 1e18).toFixed(3)}</span>
-              {" · "}
-              {t("예치 담보:", "Locked:")}{" "}
-              <span className="text-white/70 tabular-nums">{(Number(myColl) / 1e18).toFixed(3)} mETH</span>
+            {/* 클릭하면 입력창에 채워짐 (예치=보유, 출금=안전 출금 한도) */}
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <button type="button" onClick={() => setCollAmt(ethTrim(ethBal))} className={fill}>
+                {t("보유", "Wallet")} <span className="text-white/70">{ethTrim(ethBal)} mETH</span>
+              </button>
+              <button
+                type="button"
+                disabled={maxWithdrawColl === 0n}
+                onClick={() => setCollAmt(ethTrim(maxWithdrawColl))}
+                className={fill}
+              >
+                {t("출금 가능", "Withdrawable")}{" "}
+                <span className="text-white/70">{ethTrim(maxWithdrawColl)} mETH</span>
+              </button>
+              <span className="tabular-nums text-white/30">
+                {t("예치 담보", "Locked")} {ethTrim(myColl)} mETH
+              </span>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-white/30">
+              {t(
+                "담보 mETH는 이자가 붙지 않아요 — 예치 APY는 mKRW 예치에만 적용됩니다. 담보는 대출을 받기 위한 잠금일 뿐이에요.",
+                "Collateral (mETH) earns no interest — Supply APY applies only to supplied mKRW. Collateral is just locked to borrow against."
+              )}
             </p>
             <div className="relative mt-4">
               <input
@@ -389,27 +440,55 @@ export default function EarnPage() {
                 {borrowApy.toFixed(2)}% APY
               </span>
             </div>
-            <p className="mt-2 text-sm text-white/40">
-              {t("대출 가능:", "Available:")}{" "}
-              <span className="text-white/70 tabular-nums">{fmtKRW(borrowable)}</span>
-              {cashLimited && (
-                <span className="ml-1 text-[11px] text-white/30">
-                  {cashAvail === 0n
-                    ? t(
-                        `· 담보 한도 ${fmtKRW(myMaxBorrow)} — 풀에 예치가 없어 대출 불가, 먼저 예치하세요`,
-                        `· collateral allows ${fmtKRW(myMaxBorrow)} — pool is empty, supply first`
-                      )
-                    : t(
-                        `· 담보 한도 ${fmtKRW(myMaxBorrow)} (풀 유동성 한도)`,
-                        `· collateral allows ${fmtKRW(myMaxBorrow)} (capped by pool cash)`
-                      )}
-                </span>
+            {/* 클릭하면 입력창에 채워짐 (대출=대출가능, 상환=상환가능) */}
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={borrowable === 0n}
+                  onClick={() => setBorrowAmt(krwInt(borrowable))}
+                  className={fill}
+                >
+                  {t("대출 가능", "Available")} <span className="text-white/70">{fmtKRW(borrowable)}</span>
+                </button>
+                <InfoTip
+                  text={t(
+                    "지금 실제로 빌릴 수 있는 금액 = min(담보 LTV 한도, 풀의 가용 현금). 브리지로 선지급된 돈은 이미 풀에서 나가 있어 빌릴 수 없습니다.",
+                    "What you can actually borrow now = min(collateral LTV limit, pool's available cash). Bridge-advanced funds have already left the pool and can't be borrowed."
+                  )}
+                />
+              </span>
+              {myDebt > 0n && (
+                <button
+                  type="button"
+                  disabled={repayable === 0n}
+                  onClick={() => setBorrowAmt(krwInt(repayable))}
+                  className={fill}
+                >
+                  {t("상환 가능", "Repayable")} <span className="text-amber-300">{fmtKRW(repayable)}</span>
+                </button>
               )}
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-white/30">
+              {cashLimited &&
+                (cashAvail === 0n
+                  ? t(
+                      `담보 한도 ${fmtKRW(myMaxBorrow)} — 풀에 예치가 없어 대출 불가, 먼저 예치하세요. `,
+                      `Collateral allows ${fmtKRW(myMaxBorrow)} — pool is empty, supply first. `
+                    )
+                  : t(
+                      `담보 한도 ${fmtKRW(myMaxBorrow)} (풀 유동성 한도). `,
+                      `Collateral allows ${fmtKRW(myMaxBorrow)} (capped by pool cash). `
+                    ))}
               {myDebt > 0n && (
                 <>
-                  {" · "}
-                  {t("현재 부채:", "Debt:")}{" "}
+                  {t("현재 부채", "Debt")}{" "}
                   <span className="text-amber-300 tabular-nums">{fmtKRW(myDebt)}</span>
+                  {repayable < myDebt &&
+                    t(
+                      " · 지갑 잔액이 부족해 일부만 상환됩니다.",
+                      " · wallet balance is short, so only part can be repaid."
+                    )}
                 </>
               )}
             </p>
@@ -474,16 +553,17 @@ export default function EarnPage() {
                   {busy === "borrow" ? t("대출 중", "Borrowing") : t("대출", "Borrow")}
                 </button>
                 <button
-                  disabled={!!busy || myDebt === 0n}
+                  disabled={!!busy || myDebt === 0n || Number(borrowAmt) <= 0}
                   onClick={() =>
                     run("repay", async () => {
-                      await ensureAllowance(MOCKKRW_ADDRESS, mockKrwAbi, maxUint256);
-                      return send("repay", [maxUint256]);
+                      const amt = parseUnits(borrowAmt || "0", 18);
+                      await ensureAllowance(MOCKKRW_ADDRESS, mockKrwAbi, amt);
+                      return send("repay", [amt]);
                     })
                   }
                   className={ghost}
                 >
-                  {busy === "repay" ? t("상환 중", "…") : t("전액 상환", "Repay all")}
+                  {busy === "repay" ? t("상환 중", "…") : t("상환", "Repay")}
                 </button>
               </div>
             </div>

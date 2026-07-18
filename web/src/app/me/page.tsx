@@ -181,7 +181,7 @@ export default function MyPage() {
         });
         if (!cancelled) setFlows(items);
       } catch {
-        if (!cancelled) setFlows([]);
+        // 일시적 RPC 실패로 이력을 지우지 않는다 (직전 목록 유지 → 깜빡임 방지)
       } finally {
         if (!cancelled) setFlowsLoading(false);
       }
@@ -216,16 +216,17 @@ export default function MyPage() {
     query: { enabled, refetchInterval: enabled ? 5000 : undefined },
   });
 
-  const circles = [
-    ...(((base?.[1]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
-    ...(((base?.[0]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
-  ];
-  const escrows = [
-    ...(((base?.[3]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
-    ...(((base?.[6]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
-    ...(((base?.[7]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
-    ...(((base?.[2]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
-  ];
+  // 팩토리 getAll 결과는 append-only(주소는 사라지지 않음)이므로,
+  // 일시적 RPC 실패로 특정 read 가 undefined 로 튈 때 직전 목록을 유지한다.
+  // (→ 내 계모임·전세 내역이 통째로 깜빡이며 사라졌다 나타나는 현상 방지)
+  const g0 = useSticky(base?.[0]?.result as `0x${string}`[] | undefined) ?? [];
+  const g1 = useSticky(base?.[1]?.result as `0x${string}`[] | undefined) ?? [];
+  const g2 = useSticky(base?.[2]?.result as `0x${string}`[] | undefined) ?? [];
+  const g3 = useSticky(base?.[3]?.result as `0x${string}`[] | undefined) ?? [];
+  const g6 = useSticky(base?.[6]?.result as `0x${string}`[] | undefined) ?? [];
+  const g7 = useSticky(base?.[7]?.result as `0x${string}`[] | undefined) ?? [];
+  const circles = [...g1, ...g0];
+  const escrows = [...g3, ...g6, ...g7, ...g2];
   // sticky: 일시적 RPC 실패로 값이 0으로 깜빡이는 것을 방지 (직전 유효값 유지)
   const poolValue = useSticky(base?.[4]?.result as bigint | undefined) ?? 0n;
   const balance = useSticky(base?.[5]?.result as bigint | undefined) ?? 0n;
