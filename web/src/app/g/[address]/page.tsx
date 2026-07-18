@@ -208,13 +208,13 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
     <div className="min-h-screen bg-black">
       <AppNav />
 
-      <main className="mx-auto max-w-6xl px-6 pb-24">
+      <main className="mx-auto max-w-6xl px-4 pb-24 md:px-6">
         {/* Page head */}
         <FadeUp className="flex flex-col gap-4 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="mb-2 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/35">
+            <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs uppercase tracking-[0.2em] text-white/35">
               {t("계 상세", "Circle Detail")}
-              <span className={`rounded-full border px-2.5 py-0.5 normal-case tracking-normal ${STATE_CLS[state ?? 0]}`}>
+              <span className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 normal-case tracking-normal ${STATE_CLS[state ?? 0]}`}>
                 {t(STATE_LABEL[state ?? 0][0], STATE_LABEL[state ?? 0][1])}
               </span>
             </p>
@@ -353,7 +353,7 @@ export default function KyePage({ params }: { params: Promise<{ address: string 
           {/* Right: actions */}
           <FadeUp
             delay={0.16}
-            className="flex h-fit flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
+            className="flex h-fit flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 md:p-8 lg:sticky lg:top-24"
           >
             <p className={`${label} mb-4`}>{t("액션", "Actions")}</p>
             <SwapIn

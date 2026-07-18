@@ -1,16 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAccount, useSwitchChain } from "wagmi";
 import { giwaSepolia } from "@/lib/chain";
 import { shortAddr } from "@/lib/contracts";
 import { useLang } from "@/lib/i18n";
 import { WalletModal } from "@/components/WalletModal";
-import { OPEN_MYPAGE_EVENT } from "@/components/MyPage";
 
 export const OPEN_WALLET_EVENT = "ieum:open-wallet";
 
 export function ConnectButton() {
   const { t } = useLang();
+  const router = useRouter();
   const { address, isConnected, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
   const [modalOpen, setModalOpen] = useState(false);
@@ -55,7 +56,7 @@ export function ConnectButton() {
 
   return (
     <button
-      onClick={() => window.dispatchEvent(new Event(OPEN_MYPAGE_EVENT))}
+      onClick={() => router.push("/me")}
       className="liquid-glass glass-hover pressable rounded-full px-4 py-2 text-xs font-semibold text-white/70"
       title={t("마이페이지", "My Page")}
     >

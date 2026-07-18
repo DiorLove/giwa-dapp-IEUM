@@ -66,7 +66,7 @@ export default function PoolPage() {
   return (
     <div className="min-h-screen bg-black">
       <AppNav />
-      <main className="mx-auto max-w-6xl px-6 pb-24">
+      <main className="mx-auto max-w-6xl px-4 pb-24 md:px-6">
         <FadeUp className="pt-12 pb-10">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">Bridge Pool</p>
           <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
@@ -155,7 +155,7 @@ export default function PoolPage() {
         />
 
         <FadeUp delay={0.16} className="mt-14 grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 md:p-8">
             <p className={label}>{t("예치", "Deposit")}</p>
             <p className="mt-2 text-sm text-white/40">
               {t("보유 mKRW:", "mKRW balance:")}{" "}
@@ -214,7 +214,7 @@ export default function PoolPage() {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 md:p-8">
             <p className={label}>{t("출금", "Withdraw")}</p>
             <p className="mt-2 text-sm leading-relaxed text-white/40">
               {t(

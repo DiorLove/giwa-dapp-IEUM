@@ -2,12 +2,11 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAccount } from "wagmi";
 import { ArrowUpRight, Fuel, HelpCircle, LayoutGrid, User, Wallet, X } from "lucide-react";
 import { useLang, LangToggle } from "@/lib/i18n";
-import { OPEN_MYPAGE_EVENT } from "@/components/MyPage";
 import { OPEN_WALLET_EVENT } from "@/components/ConnectButton";
 import { OPEN_TOUR_EVENT } from "@/components/Onboarding";
 
@@ -24,6 +23,7 @@ export function MobileMenu({
 }) {
   const { t } = useLang();
   const pathname = usePathname();
+  const router = useRouter();
   const { isConnected } = useAccount();
 
   useEffect(() => {
@@ -35,7 +35,8 @@ export function MobileMenu({
 
   function openMyPage() {
     onClose();
-    window.dispatchEvent(new Event(isConnected ? OPEN_MYPAGE_EVENT : OPEN_WALLET_EVENT));
+    if (isConnected) router.push("/me");
+    else window.dispatchEvent(new Event(OPEN_WALLET_EVENT));
   }
 
   if (typeof document === "undefined") return null;

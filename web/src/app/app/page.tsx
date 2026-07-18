@@ -75,7 +75,7 @@ export default function AppHome() {
     <div className="min-h-screen bg-black">
       <AppNav />
 
-      <main className="mx-auto max-w-6xl px-6 pb-24">
+      <main className="mx-auto max-w-6xl px-4 pb-24 md:px-6">
         {/* Page head */}
         <FadeUp className="flex flex-col gap-6 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
           <div>
@@ -268,13 +268,17 @@ export default function AppHome() {
                   style={{ animationDelay: `${Math.min(idx * 40, 320)}ms` }}
                   className="stagger-item group grid grid-cols-2 items-center gap-3 border-b border-white/[0.06] px-6 py-5 transition-colors last:border-b-0 hover:bg-white/[0.03] md:grid-cols-[1fr_140px_140px_120px_48px] md:gap-4"
                 >
-                  <span className="flex items-center gap-3 font-mono text-sm text-white/70">
-                    {shortAddr(m)}
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm text-white/70">
+                    <span className="shrink-0">{shortAddr(m)}</span>
                     {mine && (
-                      <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] tracking-wide text-white/50">
+                      <span className="shrink-0 whitespace-nowrap rounded-full border border-white/15 px-2 py-0.5 text-[10px] tracking-wide text-white/50">
                         {t("참여 중", "Member")}
                       </span>
                     )}
+                    {/* 모바일 전용 상태 배지 (데스크톱은 우측 컬럼에 표시) */}
+                    <span className={`shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] md:hidden ${meta.cls}`}>
+                      {t(meta.label[0], meta.label[1])}
+                    </span>
                   </span>
                   <span className="text-right text-sm font-medium text-white tabular-nums">
                     {fmtKRW(contribution ?? 0n)}

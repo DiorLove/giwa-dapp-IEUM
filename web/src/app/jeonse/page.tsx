@@ -82,7 +82,7 @@ export default function JeonseList() {
   return (
     <div className="min-h-screen bg-black">
       <AppNav />
-      <main className="mx-auto max-w-6xl px-6 pb-24">
+      <main className="mx-auto max-w-6xl px-4 pb-24 md:px-6">
         <FadeUp className="flex flex-col gap-6 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">

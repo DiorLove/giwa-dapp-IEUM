@@ -99,7 +99,7 @@ export default function JeonseCreate() {
   return (
     <div className="min-h-screen bg-black">
       <AppNav />
-      <main className="mx-auto max-w-6xl px-6 pb-24">
+      <main className="mx-auto max-w-6xl px-4 pb-24 md:px-6">
         <FadeUp className="pt-12 pb-10">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">New Escrow</p>
           <h1 className="font-display text-4xl tracking-tight text-white md:text-5xl">
@@ -214,7 +214,7 @@ export default function JeonseCreate() {
 
           <FadeUp
             delay={0.16}
-            className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
+            className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 md:p-8 lg:sticky lg:top-24"
           >
             <p className={label}>{t("정산 구조", "Settlement structure")}</p>
             <dl className="mt-6 flex flex-col gap-4 border-b border-white/[0.06] pb-6">

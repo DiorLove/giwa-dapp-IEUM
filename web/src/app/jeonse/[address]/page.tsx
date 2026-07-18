@@ -253,18 +253,18 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
   return (
     <div className="min-h-screen bg-black">
       <AppNav />
-      <main className="mx-auto max-w-6xl px-6 pb-24">
+      <main className="mx-auto max-w-6xl px-4 pb-24 md:px-6">
         <FadeUp className="flex flex-col gap-4 pt-12 pb-10 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="mb-2 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/35">
+            <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs uppercase tracking-[0.2em] text-white/35">
               {t("전세 에스크로", "Jeonse Escrow")}
               <span
-                className={`rounded-full border px-2.5 py-0.5 normal-case tracking-normal ${STATE_CLS[state ?? 0]}`}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 normal-case tracking-normal ${STATE_CLS[state ?? 0]}`}
               >
                 {t(STATE_LABEL[state ?? 0][0], STATE_LABEL[state ?? 0][1])}
               </span>
               {bridged && (
-                <span className="rounded-full border border-sky-400/30 px-2.5 py-0.5 normal-case tracking-normal text-sky-300">
+                <span className="shrink-0 whitespace-nowrap rounded-full border border-sky-400/30 px-2.5 py-0.5 normal-case tracking-normal text-sky-300">
                   {t("브리지 선지급됨", "Bridge advanced")}
                 </span>
               )}
@@ -313,7 +313,7 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_400px]">
           <FadeUp delay={0.08} className="flex flex-col gap-10">
             {/* 정산 구조 시각화 */}
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.01] p-8">
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.01] p-6 md:p-8">
               <p className={`mb-6 flex items-center gap-1.5 ${label}`}>
                 {t("원자적 연쇄 정산 구조", "Atomic chain settlement")}
                 <InfoTip
@@ -484,7 +484,7 @@ export default function JeonseDetail({ params }: { params: Promise<{ address: st
           {/* 액션 패널 */}
           <FadeUp
             delay={0.16}
-            className="flex h-fit flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 lg:sticky lg:top-24"
+            className="flex h-fit flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 md:p-8 lg:sticky lg:top-24"
           >
             <p className={`${label} mb-4`}>{t("액션", "Actions")}</p>
             <SwapIn

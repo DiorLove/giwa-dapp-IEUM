@@ -7,7 +7,6 @@ import { Fuel, HelpCircle, Menu } from "lucide-react";
 import { ConnectButton } from "@/components/ConnectButton";
 import { Onboarding, OPEN_TOUR_EVENT } from "@/components/Onboarding";
 import { MobileMenu } from "@/components/MobileMenu";
-import { MyPage } from "@/components/MyPage";
 import { LangToggle, useLang } from "@/lib/i18n";
 
 const LINKS: { href: string; label: [string, string]; tour: string }[] = [
@@ -118,7 +117,6 @@ export function AppNav() {
       </div>
 
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} links={LINKS} />
-      <MyPage />
       <Onboarding />
     </header>
   );
