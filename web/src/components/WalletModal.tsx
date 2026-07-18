@@ -13,6 +13,9 @@ const EASE = [0.23, 1, 0.32, 1] as const;
 /** 모바일 브라우저에서 지갑 앱의 인앱 브라우저로 현재 사이트를 여는 딥링크.
  *  인앱 브라우저 안에서는 지갑이 주입되어 정상적으로 연결된다. undefined = 딥링크 미지원 */
 type DeepLink = (fullUrl: string, host: string, path: string) => string;
+/** WalletConnect 연결 URI 를 해당 지갑 앱으로 여는 딥링크 (WC 레지스트리 스킴 기준) */
+type WcLink = (wcUri: string) => string;
+const enc = encodeURIComponent;
 
 /** EVM 지원 지갑 목록 — key 는 /public/wallets/<key>.png 공식 로고 파일명과 매칭 */
 const WALLETS: {
@@ -21,6 +24,7 @@ const WALLETS: {
   rdns: string[];
   url: string;
   deepLink?: DeepLink;
+  wc?: WcLink;
   comingSoon?: boolean;
 }[] = [
   {
@@ -28,21 +32,24 @@ const WALLETS: {
     name: "MetaMask",
     rdns: ["io.metamask", "io.metamask.flask"],
     url: "https://metamask.io/download",
+    wc: (uri) => `https://metamask.app.link/wc?uri=${enc(uri)}`,
   },
   {
     key: "okx",
     name: "OKX Wallet",
     rdns: ["com.okex.wallet"],
     url: "https://web3.okx.com",
-    deepLink: (full) => `okx://wallet/dapp/url?dappUrl=${encodeURIComponent(full)}`,
+    wc: (uri) => `okx://wallet/wc?uri=${enc(uri)}`,
+    deepLink: (full) => `okx://wallet/dapp/url?dappUrl=${enc(full)}`,
   },
   {
     key: "phantom",
     name: "Phantom",
     rdns: ["app.phantom"],
     url: "https://phantom.com/download",
+    // Phantom 은 WC 모바일 딥링크 미제공 → 인앱 브라우저로 열어 그 안에서 연결
     deepLink: (full) =>
-      `https://phantom.app/ul/browse/${encodeURIComponent(full)}?ref=${encodeURIComponent(
+      `https://phantom.app/ul/browse/${enc(full)}?ref=${enc(
         typeof location !== "undefined" ? location.origin : full
       )}`,
   },
@@ -51,14 +58,22 @@ const WALLETS: {
     name: "Binance Wallet",
     rdns: ["com.binance.wallet", "com.binance.w3w"],
     url: "https://www.binance.com/en/web3wallet",
-    deepLink: (full) => `https://app.binance.com/cedefi/dapp-link?url=${encodeURIComponent(full)}`,
+    wc: (uri) => `bnc://app.binance.com/cedefi/wc?uri=${enc(uri)}`,
+    deepLink: (full) => `https://app.binance.com/cedefi/dapp-link?url=${enc(full)}`,
   },
-  { key: "rabby", name: "Rabby Wallet", rdns: ["io.rabby"], url: "https://rabby.io" },
+  {
+    key: "rabby",
+    name: "Rabby Wallet",
+    rdns: ["io.rabby"],
+    url: "https://rabby.io",
+    wc: (uri) => `rabby://wc?uri=${enc(uri)}`,
+  },
   {
     key: "rainbow",
     name: "Rainbow",
     rdns: ["me.rainbow"],
     url: "https://rainbow.me",
+    wc: (uri) => `https://rnbwapp.com/wc?uri=${enc(uri)}`,
     deepLink: (full) => `https://rnbwapp.com/to/dapp/${full.replace(/^https?:\/\//, "")}`,
   },
   {
@@ -126,15 +141,44 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
     }
   }
 
+  /** WalletConnect 로 연결하되, 연결 URI 를 해당 지갑 앱 딥링크로 직접 열어
+   *  범용 목록 없이 그 앱으로 바로 넘어가 인증 요청이 뜨게 한다. */
+  async function connectViaWc(w: (typeof rows)[number]) {
+    if (!wc || !w.wc) return;
+    setBusy(w.name);
+    setError(null);
+    let handled = false;
+    try {
+      const provider = (await wc.getProvider()) as {
+        on: (e: string, cb: (v: string) => void) => void;
+        removeListener?: (e: string, cb: (v: string) => void) => void;
+      };
+      const onUri = (uri: string) => {
+        handled = true;
+        window.location.href = w.wc!(uri);
+      };
+      provider.on("display_uri", onUri);
+      await connectAsync({ connector: wc });
+      provider.removeListener?.("display_uri", onUri);
+      onClose();
+    } catch (e) {
+      // 사용자가 앱으로 넘어간 뒤 승인 대기 중 취소하면 에러가 날 수 있으니, 딥링크가 이미 열렸으면 조용히 무시
+      if (!handled) setError(errMsg(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   /** 지갑 버튼 클릭 처리:
    *  1) 익스텐션 감지 → 바로 연결
-   *  2) MetaMask → SDK 로 연결 (모바일이면 앱으로 넘어가 인증 요청이 뜬다)
-   *  3) 그 외 모바일 → WalletConnect(있으면) 또는 앱 딥링크
-   *  4) 데스크톱 미설치 → 설치 페이지 */
+   *  2) MetaMask → SDK (모바일이면 앱으로 넘어가 인증 요청)
+   *  3) 그 외 모바일 → WalletConnect URI 를 그 지갑 앱 딥링크로 직접 오픈
+   *  4) WC 딥링크 없는 지갑(Phantom 등) → 인앱 브라우저 딥링크
+   *  5) 데스크톱 미설치 → 설치 페이지 */
   function handlePick(w: (typeof rows)[number]) {
     if (w.connector) return pick(w.connector, w.name);
     if (w.key === "metamask" && mmSDK) return pick(mmSDK, w.name);
-    if (isMobile && wc) return pick(wc, w.name);
+    if (isMobile && wc && w.wc) return connectViaWc(w);
     if (isMobile && w.deepLink) {
       const full = window.location.href;
       const host = window.location.host;

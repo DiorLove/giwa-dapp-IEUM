@@ -22,7 +22,8 @@ export const config = createConfig({
       ? [
           walletConnect({
             projectId: wcProjectId,
-            showQrModal: true,
+            // 자체 모달 대신 우리가 display_uri 를 받아 지갑별 딥링크로 직접 연다
+            showQrModal: false,
             metadata: {
               name: "이음 IEUM",
               description: "한국형 온체인 에스크로",
