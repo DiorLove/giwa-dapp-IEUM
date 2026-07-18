@@ -136,7 +136,7 @@ export function Hero() {
         animate="show"
         className="relative z-10 flex flex-1 -translate-y-[12%] flex-col items-center justify-center gap-8 px-6 py-12 text-center"
       >
-        <h1 className="font-display text-6xl tracking-tight text-white md:text-8xl lg:text-9xl">
+        <h1 className="font-display text-5xl leading-[1.12] tracking-tight text-white sm:text-6xl md:text-8xl lg:text-9xl">
           <motion.span variants={riseBlur} className="inline-block">
             {t("목돈의", "Big money,")}
           </motion.span>{" "}

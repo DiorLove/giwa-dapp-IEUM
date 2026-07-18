@@ -16,7 +16,7 @@ export function PhilosophySection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.8, ease: EASE }}
-          className="mb-16 text-5xl tracking-tight text-white md:mb-24 md:text-7xl lg:text-8xl"
+          className="mb-16 text-5xl leading-[1.1] tracking-tight text-white md:mb-24 md:text-7xl lg:text-8xl"
         >
           {t("전통", "Tradition")}{" "}
           <span className="font-display italic text-white/40">×</span>{" "}
