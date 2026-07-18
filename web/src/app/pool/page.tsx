@@ -47,6 +47,19 @@ export default function PoolPage() {
   const myBalance = (data?.[4]?.result as bigint | undefined) ?? 0n;
   const myValue = totalShares > 0n ? (myShares * totalAssets) / totalShares : 0n;
 
+  // ── 동적 APY (표시용 추정) ──────────────────────────────────────────────
+  // 이 풀의 수익원은 선지급 수수료 0.5%(1회성). DeFi 대출 풀(Aave/Compound)의
+  // 이용률(utilization) 기반 + Curve의 수수료 기반을 합친 모델로 연이자를 추정한다.
+  //   이용률 U = 선지급 중 / 풀 총자산
+  //   연 회전수 = 365 / 평균 선지급일수(모델 가정: 14일) ≈ 26회
+  //   APY = 수수료율(0.5%) × 연 회전수 × 이용률   (이용률에 따라 유동적)
+  const FEE_RATE = 0.005;
+  const ANNUAL_TURNOVER = 26; // 평균 선지급 14일 가정
+  const utilization =
+    totalAssets > 0n ? Number((outstanding * 1_000_000n) / totalAssets) / 1_000_000 : 0;
+  const currentApy = FEE_RATE * ANNUAL_TURNOVER * utilization * 100;
+  const maxApy = FEE_RATE * ANNUAL_TURNOVER * 100; // 이용률 100% 기준 상한
+
   async function run(name: string, fn: () => Promise<`0x${string}`>) {
     setBusy(name);
     setError(null);
@@ -80,6 +93,51 @@ export default function PoolPage() {
               "Ultra-short liquidity that links the days between moving dates. Advances go only to deals where the next tenant's deposit is already locked on-chain — lending with visible collateral. The 0.5% advance fee goes to depositors."
             )}
           </p>
+        </FadeUp>
+
+        {/* 동적 APY 하이라이트 */}
+        <FadeUp
+          delay={0.06}
+          className="mb-4 flex flex-col gap-6 rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.04] p-6 md:flex-row md:items-center md:justify-between md:p-8"
+        >
+          <div>
+            <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.15em] text-emerald-300/70">
+              {t("예상 연이자 (APY)", "Est. Yield (APY)")}
+              <InfoTip
+                text={t(
+                  "예치자에게 돌아가는 추정 연이자입니다. 이 풀의 수익원은 선지급 수수료(0.5%)이며, DeFi 대출 풀처럼 이용률이 높을수록 APY가 올라갑니다. 계산식: 0.5% × 연 회전수(평균 14일 선지급 가정 ≈ 26회) × 이용률. 실제 수익은 선지급 발생량에 따라 달라지는 추정치입니다.",
+                  "Estimated annual yield to depositors. The pool earns a 0.5% advance fee, and like DeFi lending pools, APY rises with utilization. Formula: 0.5% × annual turnover (~26, assuming 14-day advances) × utilization. This is an estimate that varies with actual advance volume."
+                )}
+              />
+            </p>
+            <p className="mt-1.5 font-display text-4xl tracking-tight text-white tabular-nums md:text-5xl">
+              {currentApy.toFixed(2)}
+              <span className="ml-1 text-2xl text-emerald-300/80 md:text-3xl">%</span>
+            </p>
+            <p className="mt-1 text-xs text-white/35">
+              {t(`이용률 100% 기준 최대 ${maxApy.toFixed(1)}%`, `Up to ${maxApy.toFixed(1)}% at full utilization`)}
+            </p>
+          </div>
+          <div className="w-full md:max-w-xs">
+            <div className="mb-1.5 flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-white/45">
+                {t("이용률", "Utilization")}
+                <InfoTip
+                  text={t(
+                    "풀 총자산 중 현재 선지급으로 나가 수수료를 벌고 있는 비율입니다. 높을수록 APY가 올라가지만, 출금 가능한 여유 유동성은 줄어듭니다.",
+                    "Share of pool assets currently advanced and earning fees. Higher lifts APY but leaves less liquidity free to withdraw."
+                  )}
+                />
+              </span>
+              <span className="tabular-nums text-white/70">{(utilization * 100).toFixed(1)}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full bg-emerald-400/70 transition-[width] duration-700"
+                style={{ width: `${Math.min(utilization * 100, 100)}%` }}
+              />
+            </div>
+          </div>
         </FadeUp>
 
         <FadeUp

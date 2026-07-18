@@ -43,6 +43,7 @@ export default function Dashboard() {
       { address: FACTORY_ADDRESS, abi: factoryAbi, functionName: "getAll" },
       { address: LEGACY_FACTORY_ADDRESS, abi: factoryAbi, functionName: "getAll" },
       { address: BRIDGE_POOL_ADDRESS, abi: bridgePoolAbi, functionName: "totalAssets" },
+      { address: BRIDGE_POOL_ADDRESS, abi: bridgePoolAbi, functionName: "totalOutstanding" },
     ],
     query: { refetchInterval: 6000 },
   });
@@ -62,7 +63,13 @@ export default function Dashboard() {
     ((stats?.[2]?.result as unknown[] | undefined)?.length ?? 0) +
     ((stats?.[3]?.result as unknown[] | undefined)?.length ?? 0);
   const poolAssets = (stats?.[4]?.result as bigint | undefined) ?? 0n;
+  const poolOutstanding = (stats?.[5]?.result as bigint | undefined) ?? 0n;
   const myBalance = (balance as bigint | undefined) ?? 0n;
+
+  // 브리지 풀 예상 APY (pool 페이지와 동일 모델: 0.5% × 연 회전수 26 × 이용률)
+  const utilization =
+    poolAssets > 0n ? Number((poolOutstanding * 1_000_000n) / poolAssets) / 1_000_000 : 0;
+  const poolApy = 0.005 * 26 * utilization * 100;
 
   const label = "text-xs uppercase tracking-[0.15em] text-white/35";
 
@@ -86,7 +93,10 @@ export default function Dashboard() {
         "이사 날짜 사이 며칠을 잇는 초단기 유동성. 예치하면 선지급 수수료를 수익으로 받습니다.",
         "Ultra-short liquidity bridging moving-date gaps. Deposit to earn the advance fees."
       ),
-      stat: t(`풀 자산 ${fmtKRW(poolAssets)}`, `${fmtKRW(poolAssets)} pooled`),
+      stat: t(
+        `예상 APY ${poolApy.toFixed(1)}% · 풀 자산 ${fmtKRW(poolAssets)}`,
+        `~${poolApy.toFixed(1)}% APY · ${fmtKRW(poolAssets)} pooled`
+      ),
     },
     {
       href: "/app",
