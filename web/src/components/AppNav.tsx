@@ -30,7 +30,7 @@ export function AppNav() {
       wasConnected.current = true;
     } else if (wasConnected.current) {
       wasConnected.current = false;
-      router.push("/dashboard");
+      router.push("/");
     }
   }, [isConnected, router]);
 
@@ -39,7 +39,7 @@ export function AppNav() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-10">
           <Link
-            href="/"
+            href={isConnected ? "/dashboard" : "/"}
             className="flex items-center gap-2.5 font-display text-xl tracking-tight text-white"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
