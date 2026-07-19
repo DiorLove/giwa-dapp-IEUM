@@ -5,13 +5,16 @@ import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IeumEarn, IPriceOracle} from "../src/IeumEarn.sol";
 import {JeonseFactory} from "../src/JeonseFactory.sol";
+import {PriceOracle} from "../src/PriceOracle.sol";
 
-/// 통합 배포 — IeumEarn v2(브리지 포함)를 단일 유동성 풀로, JeonseFactory 는 이를 브리지 풀로 지정.
-/// MockKRW / MockETH / PriceOracle 은 기존 배포분 재사용.
+/// 통합 배포 — IeumEarn(브리지 포함)를 단일 유동성 풀로, JeonseFactory 는 이를 브리지 풀로 지정.
+/// MockKRW / MockETH 는 기존 배포분 재사용, PriceOracle 은 서킷브레이커 포함본으로 신규 배포.
 contract DeployUnified is Script {
     address constant MOCKKRW = 0x34e78932cB132e248EEf189ed66574E9dffc18BB;
     address constant METH = 0x9AaB1E96a0E800beA9E1dC2aBc0378067b375296;
-    address constant ORACLE = 0x5473209D28849b78262455988a609c0bDA0332B5;
+
+    uint256 constant INIT_PRICE = 3_000_000e18; // 1 mETH = ₩3,000,000
+    uint256 constant ORACLE_MAX_DEVIATION_BPS = 2000; // 1회 변동 최대 20% (서킷브레이커)
 
     uint256 constant BASE_RATE = 0;
     uint256 constant SLOPE1 = 0.04e27;
@@ -26,10 +29,11 @@ contract DeployUnified is Script {
     function run() external {
         vm.startBroadcast();
         address treasury = msg.sender;
+        PriceOracle oracle = new PriceOracle(INIT_PRICE, ORACLE_MAX_DEVIATION_BPS);
         IeumEarn earn = new IeumEarn(
             IERC20(MOCKKRW),
             IERC20(METH),
-            IPriceOracle(ORACLE),
+            IPriceOracle(address(oracle)),
             treasury,
             BASE_RATE,
             SLOPE1,
@@ -45,7 +49,8 @@ contract DeployUnified is Script {
         // 브리지 선지급은 이 팩토리가 만든 에스크로만 허용 (위조 에스크로 드레인 차단)
         earn.setEscrowFactory(address(jeonseFactory));
         vm.stopBroadcast();
-        console.log("IeumEarn v2:  ", address(earn));
+        console.log("PriceOracle:  ", address(oracle));
+        console.log("IeumEarn v3:  ", address(earn));
         console.log("JeonseFactory:", address(jeonseFactory));
     }
 }

@@ -13,6 +13,7 @@ import {
   LEGACY_JEONSE_FACTORY_ADDRESS_2,
   LEGACY_JEONSE_FACTORY_ADDRESS_3,
   LEGACY_JEONSE_FACTORY_ADDRESS_4,
+  LEGACY_JEONSE_FACTORY_ADDRESS_5,
   MOCKKRW_ADDRESS,
   bridgePoolAbi,
   earnAbi,
@@ -49,6 +50,7 @@ export default function Dashboard() {
       { address: LEGACY_JEONSE_FACTORY_ADDRESS_3, abi: jeonseFactoryAbi, functionName: "getAll" },
       { address: LEGACY_JEONSE_FACTORY_ADDRESS_4, abi: jeonseFactoryAbi, functionName: "getAll" },
       { address: LEGACY_FACTORY_ADDRESS_2, abi: factoryAbi, functionName: "getAll" },
+      { address: LEGACY_JEONSE_FACTORY_ADDRESS_5, abi: jeonseFactoryAbi, functionName: "getAll" },
     ],
     query: { refetchInterval: 6000 },
   });
@@ -66,6 +68,7 @@ export default function Dashboard() {
     ...(((stats?.[8]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
     ...(((stats?.[9]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
     ...(((stats?.[10]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
+    ...(((stats?.[12]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
     ...(((stats?.[0]?.result as `0x${string}`[]) ?? []) as `0x${string}`[]),
   ];
   const escrowCount = escrows.length;

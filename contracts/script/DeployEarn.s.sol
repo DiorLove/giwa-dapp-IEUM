@@ -23,12 +23,13 @@ contract DeployEarn is Script {
     uint256 constant LIQ_BONUS = 700; // 7%
     // 초기 담보 가격: 1 mETH = ₩3,000,000
     uint256 constant INIT_PRICE = 3_000_000e18;
+    uint256 constant ORACLE_MAX_DEVIATION_BPS = 2000; // 1회 변동 최대 20% (서킷브레이커)
 
     function run() external {
         vm.startBroadcast();
         address treasury = msg.sender;
         MockETH eth = new MockETH();
-        PriceOracle oracle = new PriceOracle(INIT_PRICE);
+        PriceOracle oracle = new PriceOracle(INIT_PRICE, ORACLE_MAX_DEVIATION_BPS);
         IeumEarn earn = new IeumEarn(
             IERC20(MOCKKRW),
             IERC20(address(eth)),

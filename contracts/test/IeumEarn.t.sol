@@ -53,7 +53,7 @@ contract IeumEarnTest is Test {
     function setUp() public {
         krw = new MockKRW();
         eth = new MockETH();
-        oracle = new PriceOracle(3_000_000e18); // 1 mETH = ₩3,000,000
+        oracle = new PriceOracle(3_000_000e18, 2000); // 1 mETH = ₩3,000,000, 1회 변동 최대 20%
         earn = new IeumEarn(
             IERC20(address(krw)),
             IERC20(address(eth)),
@@ -190,8 +190,9 @@ contract IeumEarnTest is Test {
         earn.borrow(10_000_000e18); // HF = 15M*0.8/10M = 1.2 (안전)
         assertGt(earn.healthFactor(borrower), WAD);
 
-        // 담보 가격 하락: 1 mETH = ₩2,000,000 → 담보 ₩10,000,000
-        oracle.setPrice(2_000_000e18);
+        // 담보 가격 하락: 서킷브레이커(20%)로 한 번에 못 내림 → 두 번에 나눠 반영
+        oracle.setPrice(2_400_000e18); // -20%
+        oracle.setPrice(2_000_000e18); // -16.7%, 최종 담보 ₩10,000,000
         // HF = 10M*0.8/10M = 0.8 < 1 → 청산 대상
         assertLt(earn.healthFactor(borrower), WAD);
 
@@ -329,6 +330,68 @@ contract IeumEarnTest is Test {
         vm.prank(treasury);
         vm.expectRevert(bytes("already set"));
         earn.setEscrowFactory(address(factory));
+    }
+
+    // ── 안전장치 A: 오라클 서킷브레이커 — 급격한 단일 변동 차단 ──
+    function test_OracleRejectsLargeMove() public {
+        vm.expectRevert(bytes("price move too large"));
+        oracle.setPrice(1_000_000e18); // -66% 한 번에 → 차단
+        // 20% 이내는 허용
+        oracle.setPrice(2_400_000e18);
+        assertEq(oracle.price(), 2_400_000e18);
+    }
+
+    // ── 안전장치 B: 긴급 정지 — 대출/브리지 차단, 상환·출금은 허용 ──
+    function test_PauseBlocksBorrowNotRepay() public {
+        _supply(lp, 20_000_000e18);
+        _addCollateral(borrower, 5e18);
+        vm.prank(borrower);
+        earn.borrow(5_000_000e18);
+
+        vm.prank(treasury);
+        earn.setPaused(true);
+
+        // 신규 대출 차단
+        vm.prank(borrower);
+        vm.expectRevert(bytes("paused"));
+        earn.borrow(1_000_000e18);
+
+        // 상환은 계속 가능 (사용자 이탈 방지)
+        vm.startPrank(borrower);
+        krw.approve(address(earn), type(uint256).max);
+        earn.repay(5_000_000e18);
+        vm.stopPrank();
+        assertEq(earn.debtOf(borrower), 0);
+
+        // 예치자 출금도 계속 가능
+        uint256 shares = earn.supplyShares(lp);
+        vm.prank(lp);
+        earn.withdraw(shares);
+    }
+
+    function test_OnlyTreasuryCanPause() public {
+        vm.expectRevert(bytes("not treasury"));
+        earn.setPaused(true);
+    }
+
+    // ── 안전장치 A: 스테일 오라클이면 대출·청산 차단 ──
+    function test_StalePriceBlocksBorrow() public {
+        _supply(lp, 20_000_000e18);
+        _addCollateral(borrower, 5e18);
+        vm.prank(treasury);
+        earn.setMaxPriceStaleness(1 hours);
+
+        // 1시간 이상 오라클 미갱신 → 대출 차단
+        vm.warp(block.timestamp + 2 hours);
+        vm.prank(borrower);
+        vm.expectRevert(bytes("stale price"));
+        earn.borrow(1_000_000e18);
+
+        // 오라클 갱신하면 다시 가능
+        oracle.setPrice(3_000_000e18);
+        vm.prank(borrower);
+        earn.borrow(1_000_000e18);
+        assertEq(earn.debtOf(borrower), 1_000_000e18);
     }
 
     // ── 출금: 유동성이 대출로 나가 있으면 제한 ──

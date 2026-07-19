@@ -7,6 +7,7 @@ import {JeonseEscrow} from "./JeonseEscrow.sol";
 
 interface IPriceOracle {
     function price() external view returns (uint256); // 담보 1개(1e18)당 자산 가격 (1e18)
+    function updatedAt() external view returns (uint256); // 마지막 가격 갱신 시각 (스테일 판단)
 }
 
 /// @title 이음 Earn — mKRW 단일자산 머니마켓 (담보: mETH)
@@ -65,6 +66,14 @@ contract IeumEarn {
     address public escrowFactory; // 트레저리가 1회 설정
     mapping(address => bool) public authorizedEscrow;
 
+    // ── 안전장치 (죽음의 나선 방어) ──────────────────────────────
+    // paused: 위험 확대 행위(신규 대출·브리지)를 트레저리가 긴급 정지.
+    //         상환·출금·청산은 언제나 허용해 사용자 이탈을 막지 않는다.
+    // maxPriceStaleness: 오라클이 이 시간 이상 갱신되지 않으면 가격 의존 행위를 차단.
+    //         (0 = 비활성) 잘못된/멈춘 오라클로 인한 부당 청산·과다 대출 방지.
+    bool public paused;
+    uint256 public maxPriceStaleness;
+
     event Supplied(address indexed user, uint256 amount, uint256 shares);
     event Withdrawn(address indexed user, uint256 amount, uint256 shares);
     event CollateralDeposited(address indexed user, uint256 amount);
@@ -77,6 +86,8 @@ contract IeumEarn {
     event BridgeRepaid(address indexed escrow, uint256 amount);
     event EscrowFactorySet(address indexed factory);
     event EscrowAuthorized(address indexed escrow);
+    event PausedSet(bool paused);
+    event MaxPriceStalenessSet(uint256 seconds_);
 
     constructor(
         IERC20 _asset,
@@ -108,6 +119,34 @@ contract IeumEarn {
         liquidationThreshold = _liqThreshold;
         liquidationBonus = _liqBonus;
         lastAccrual = block.timestamp;
+    }
+
+    // ───────────────────────── 안전장치 (트레저리) ─────────────────────────
+
+    modifier whenNotPaused() {
+        require(!paused, "paused");
+        _;
+    }
+
+    /// 긴급 정지 토글 — 신규 대출·브리지를 멈춘다 (상환·출금·청산은 계속 허용)
+    function setPaused(bool _paused) external {
+        require(msg.sender == treasury, "not treasury");
+        paused = _paused;
+        emit PausedSet(_paused);
+    }
+
+    /// 오라클 스테일 허용 한도 설정 (0 = 비활성)
+    function setMaxPriceStaleness(uint256 seconds_) external {
+        require(msg.sender == treasury, "not treasury");
+        maxPriceStaleness = seconds_;
+        emit MaxPriceStalenessSet(seconds_);
+    }
+
+    /// 오라클이 너무 오래 갱신되지 않았으면 가격 의존 행위를 차단
+    function _requireFreshPrice() internal view {
+        if (maxPriceStaleness != 0) {
+            require(block.timestamp - oracle.updatedAt() <= maxPriceStaleness, "stale price");
+        }
     }
 
     // ───────────────────────── 뷰 ─────────────────────────
@@ -229,6 +268,7 @@ contract IeumEarn {
 
     function withdrawCollateral(uint256 amount) external {
         require(amount > 0 && collateralOf[msg.sender] >= amount, "bad amount");
+        _requireFreshPrice();
         accrue();
         collateralOf[msg.sender] -= amount;
         require(debtOf(msg.sender) <= (collateralValue(msg.sender) * ltv) / BPS, "would exceed LTV");
@@ -238,8 +278,9 @@ contract IeumEarn {
 
     // ───────────────────────── 대출 / 상환 ─────────────────────────
 
-    function borrow(uint256 amount) external {
+    function borrow(uint256 amount) external whenNotPaused {
         require(amount > 0, "amount=0");
+        _requireFreshPrice();
         accrue();
         require(cash() >= amount, "insufficient liquidity");
         uint256 newDebt = debtOf(msg.sender) + amount;
@@ -268,6 +309,7 @@ contract IeumEarn {
 
     /// HF<1 인 포지션을 청산: 부채 일부를 대신 갚고 담보를 보너스와 함께 회수.
     function liquidate(address user, uint256 repayAmount) external {
+        _requireFreshPrice();
         accrue();
         require(healthFactor(user) < WAD, "healthy");
         uint256 debt = debtOf(user);
@@ -310,7 +352,7 @@ contract IeumEarn {
 
     /// 기존 세입자(A)가 선지급 요청. 다음 세입자의 전세금이 이미 락된 에스크로에만 나간다.
     /// 같은 유동성을 쓰므로 예치자는 대출 이자 + 브리지 수수료를 함께 받는다.
-    function bridge(address escrowAddr) external {
+    function bridge(address escrowAddr) external whenNotPaused {
         require(authorizedEscrow[escrowAddr], "unknown escrow");
         JeonseEscrow esc = JeonseEscrow(escrowAddr);
         require(esc.bridgePool() == address(this), "wrong pool");

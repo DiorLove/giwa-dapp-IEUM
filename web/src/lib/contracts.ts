@@ -4,10 +4,10 @@ export const MOCKKRW_ADDRESS = process.env.NEXT_PUBLIC_MOCKKRW_ADDRESS as `0x${s
 // 계모임 팩토리 — 조작 불가 2단계 추첨(start→drawOrder) 보안 패치본
 export const FACTORY_ADDRESS =
   "0xFc6cc4eEa2e8dAb1318d52482db82e68873F24a3" as `0x${string}`;
-// 위조 에스크로 브리지 드레인 차단 — 팩토리 등록(authorizeEscrow) 기반 보안 패치본.
-// 신규 에스크로는 IeumEarn v3 를 브리지 풀로 사용
+// 위조 에스크로 드레인 차단 + 오라클 서킷브레이커 + 긴급정지 포함 최신 팩토리.
+// 신규 에스크로는 IeumEarn v3(안전장치본)를 브리지 풀로 사용
 export const JEONSE_FACTORY_ADDRESS =
-  "0x6b0e095BC32464173a9A7Bf62bc500d3aCE6616D" as `0x${string}`;
+  "0xEF5D1a636c18737B9dCFa75ddfa38bfd8fBA3e49" as `0x${string}`;
 export const BRIDGE_POOL_ADDRESS = process.env
   .NEXT_PUBLIC_BRIDGE_POOL_ADDRESS as `0x${string}`;
 
@@ -30,14 +30,19 @@ export const LEGACY_JEONSE_FACTORY_ADDRESS_3 =
 // 위조 에스크로 드레인 차단 패치 전 통합 팩토리 — 기존 에스크로 보존용으로 목록에 병합
 export const LEGACY_JEONSE_FACTORY_ADDRESS_4 =
   "0x491cE6Cd7ba9493F3624877e29F6F8C202588991" as `0x${string}`;
+// 안전장치(서킷브레이커·긴급정지) 추가 전 통합 팩토리 — 기존 에스크로 보존용으로 목록에 병합
+export const LEGACY_JEONSE_FACTORY_ADDRESS_5 =
+  "0x6b0e095BC32464173a9A7Bf62bc500d3aCE6616D" as `0x${string}`;
 
-// 이음 Earn 통합 머니마켓 (예치·대출 + 브리지 선지급) — GIWA Sepolia v3 (보안 패치)
+// 이음 Earn 통합 머니마켓 (예치·대출 + 브리지 선지급) — GIWA Sepolia v3
+// (위조 드레인 차단 + 오라클 서킷브레이커 + 긴급정지)
 export const EARN_ADDRESS =
-  "0x81C5b85AC71beFB1586a72555347330B6664fe24" as `0x${string}`;
+  "0xe4556aaaA3b6bE83F16c3DF3687136f0B9C7151E" as `0x${string}`;
 export const METH_ADDRESS =
   "0x9AaB1E96a0E800beA9E1dC2aBc0378067b375296" as `0x${string}`;
+// 서킷브레이커(1회 변동 20% 제한) + updatedAt 포함 오라클
 export const ORACLE_ADDRESS =
-  "0x5473209D28849b78262455988a609c0bDA0332B5" as `0x${string}`;
+  "0xC7383631538124b8B19973b2DD83F9D948432d81" as `0x${string}`;
 
 export const mockKrwAbi = parseAbi([
   "function faucet()",
