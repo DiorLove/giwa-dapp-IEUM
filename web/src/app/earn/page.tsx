@@ -108,19 +108,25 @@ export default function EarnPage() {
   const hfColor =
     myDebt === 0n ? "text-white" : hfNum < 1.1 ? "text-red-300" : hfNum < 1.5 ? "text-amber-300" : "text-emerald-300";
 
-  async function run(name: string, fn: () => Promise<`0x${string}`>) {
+  async function run(name: string, fn: () => Promise<`0x${string}`>): Promise<boolean> {
     setBusy(name);
     setError(null);
     try {
       const hash = await fn();
       await publicClient!.waitForTransactionReceipt({ hash });
       await refetch();
+      return true;
     } catch (e) {
       setError(errMsg(e));
+      return false;
     } finally {
       setBusy(null);
     }
   }
+
+  // 숫자 애니메이션용 포맷터
+  const won = (n: number) => "₩" + n.toLocaleString("ko-KR");
+  const krwNum = (wei: bigint) => Number(wei / 10n ** 18n);
 
   async function ensureAllowance(token: `0x${string}`, abi: typeof mockKrwAbi, amount: bigint) {
     const allowance = (await publicClient!.readContract({
@@ -187,7 +193,7 @@ export default function EarnPage() {
           {[
             {
               k: t("예치 APY", "Supply APY"),
-              v: `${supplyApy.toFixed(2)}%`,
+              v: <AnimatedNumber value={supplyApy} decimals={2} format={(n) => `${n.toFixed(2)}%`} />,
               accent: true,
               tip: t(
                 "예치자가 받는 연이자 추정치. 대출 이자에서 프로토콜 몫을 뺀 값이며, 이용률이 오르면 함께 오릅니다.",
@@ -196,7 +202,7 @@ export default function EarnPage() {
             },
             {
               k: t("대출 APY", "Borrow APY"),
-              v: `${borrowApy.toFixed(2)}%`,
+              v: <AnimatedNumber value={borrowApy} decimals={2} format={(n) => `${n.toFixed(2)}%`} />,
               tip: t(
                 "대출자가 내는 연이자. 이용률 기반 2-슬로프 금리로, 이용률이 최적을 넘으면 급등합니다.",
                 "Rate borrowers pay — a utilization-based two-slope curve that spikes past the optimal point."
@@ -204,10 +210,10 @@ export default function EarnPage() {
             },
             {
               k: t("이용률", "Utilization"),
-              v: `${(util * 100).toFixed(1)}%`,
+              v: <AnimatedNumber value={util * 100} decimals={1} format={(n) => `${n.toFixed(1)}%`} />,
               tip: t("총 예치 대비 대출로 나간 비율.", "Share of supplied liquidity currently borrowed."),
             },
-            { k: t("총 예치", "Total Supplied"), v: fmtKRW(totalAssets) },
+            { k: t("총 예치", "Total Supplied"), v: <AnimatedNumber value={krwNum(totalAssets)} format={won} /> },
           ].map((s) => (
             <div key={s.k} className="bg-black p-5 md:p-6">
               <p className={`flex items-center gap-1.5 ${label}`}>
@@ -229,11 +235,15 @@ export default function EarnPage() {
         <FadeUp delay={0.08} className="mt-3 flex flex-wrap gap-x-6 gap-y-1 px-1 text-xs text-white/40">
           <span>
             {t("대출 잔액", "Loans out")}{" "}
-            <span className="text-white/70 tabular-nums">{fmtKRW(totalBorrows)}</span>
+            <span className="text-white/70 tabular-nums">
+              <AnimatedNumber value={krwNum(totalBorrows)} format={won} />
+            </span>
           </span>
           <span className="flex items-center gap-1.5">
             {t("브리지 선지급 중 (상환 예정)", "Bridge advances (receivable)")}{" "}
-            <span className="text-sky-300 tabular-nums">{fmtKRW(bridgeOut)}</span>
+            <span className="text-sky-300 tabular-nums">
+              <AnimatedNumber value={krwNum(bridgeOut)} format={won} />
+            </span>
             <InfoTip
               text={t(
                 "전세 정산일 사이 기존 세입자에게 미리 지급된 보증금 합계입니다. 각 에스크로가 정산되면 풀로 자동 상환되고, 수수료(0.5%)는 예치자·프로토콜 수익이 됩니다.",
@@ -243,7 +253,9 @@ export default function EarnPage() {
           </span>
           <span>
             {t("가용 현금", "Available cash")}{" "}
-            <span className="text-white/70 tabular-nums">{fmtKRW(cashAvail)}</span>
+            <span className="text-white/70 tabular-nums">
+              <AnimatedNumber value={krwNum(cashAvail)} format={won} />
+            </span>
           </span>
         </FadeUp>
 
@@ -254,12 +266,16 @@ export default function EarnPage() {
             className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.06] md:grid-cols-4"
           >
             {[
-              { k: t("내 예치", "Supplied"), v: fmtKRW(myValue), cls: "text-white" },
-              { k: t("내 부채", "Borrowed"), v: fmtKRW(myDebt), cls: myDebt > 0n ? "text-amber-300" : "text-white" },
-              { k: t("담보 가치", "Collateral"), v: fmtKRW(myCollValue), cls: "text-white" },
+              { k: t("내 예치", "Supplied"), v: <AnimatedNumber value={krwNum(myValue)} format={won} />, cls: "text-white" },
+              {
+                k: t("내 부채", "Borrowed"),
+                v: <AnimatedNumber value={krwNum(myDebt)} format={won} />,
+                cls: myDebt > 0n ? "text-amber-300" : "text-white",
+              },
+              { k: t("담보 가치", "Collateral"), v: <AnimatedNumber value={krwNum(myCollValue)} format={won} />, cls: "text-white" },
               {
                 k: t("Health Factor", "Health Factor"),
-                v: hfLabel,
+                v: myDebt === 0n ? hfLabel : <AnimatedNumber value={hfNum} decimals={2} format={(n) => n.toFixed(2)} />,
                 cls: hfColor,
                 tip: t(
                   "담보×청산임계÷부채. 1 아래로 내려가면 청산 대상입니다. 담보 가격이 내리거나 부채가 늘면 낮아집니다.",
@@ -304,13 +320,16 @@ export default function EarnPage() {
             <div className="flex items-center justify-between">
               <p className={label}>{t("예치 (Supply)", "Supply")}</p>
               <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-300 tabular-nums">
-                {supplyApy.toFixed(2)}% APY
+                <AnimatedNumber value={supplyApy} decimals={2} format={(n) => `${n.toFixed(2)}% APY`} />
               </span>
             </div>
             {/* 클릭하면 입력창에 채워지는 최대값 (예치=지갑, 출금=내 예치) */}
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
               <button type="button" onClick={() => setSupplyAmt(krwInt(krwBal))} className={fill}>
-                {t("지갑", "Wallet")} <span className="text-white/70">{fmtKRW(krwBal)}</span>
+                {t("지갑", "Wallet")}{" "}
+                <span className="text-white/70">
+                  <AnimatedNumber value={krwNum(krwBal)} format={won} />
+                </span>
               </button>
               <button
                 type="button"
@@ -318,7 +337,10 @@ export default function EarnPage() {
                 onClick={() => setSupplyAmt(krwInt(myValue))}
                 className={fill}
               >
-                {t("내 예치", "Supplied")} <span className="text-white/70">{fmtKRW(myValue)}</span>
+                {t("내 예치", "Supplied")}{" "}
+                <span className="text-white/70">
+                  <AnimatedNumber value={krwNum(myValue)} format={won} />
+                </span>
               </button>
             </div>
             <div className="relative mt-4">
@@ -337,25 +359,27 @@ export default function EarnPage() {
             <div className="mt-4 flex gap-2">
               <button
                 disabled={!!busy || !me || Number(supplyAmt) <= 0}
-                onClick={() =>
-                  run("supply", async () => {
+                onClick={async () => {
+                  const ok = await run("supply", async () => {
                     const amt = parseUnits(supplyAmt || "0", 18);
                     await ensureAllowance(MOCKKRW_ADDRESS, mockKrwAbi, amt);
                     return send("supply", [amt]);
-                  })
-                }
+                  });
+                  if (ok) setSupplyAmt("");
+                }}
                 className={primary}
               >
                 {busy === "supply" ? t("예치 중", "Supplying") : t("예치", "Supply")}
               </button>
               <button
                 disabled={!!busy || myShares === 0n || Number(supplyAmt) <= 0}
-                onClick={() =>
-                  run("withdraw", () => {
+                onClick={async () => {
+                  const ok = await run("withdraw", () => {
                     const amt = parseUnits(supplyAmt || "0", 18);
                     return send("withdraw", [sharesForWithdraw(amt)]);
-                  })
-                }
+                  });
+                  if (ok) setSupplyAmt("");
+                }}
                 className={ghost}
               >
                 {busy === "withdraw" ? t("출금 중", "…") : t("출금", "Withdraw")}
@@ -372,7 +396,10 @@ export default function EarnPage() {
             {/* 클릭하면 입력창에 채워짐 (예치=보유, 출금=안전 출금 한도) */}
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
               <button type="button" onClick={() => setCollAmt(ethTrim(ethBal))} className={fill}>
-                {t("보유", "Wallet")} <span className="text-white/70">{ethTrim(ethBal)} mETH</span>
+                {t("보유", "Wallet")}{" "}
+                <span className="text-white/70">
+                  <AnimatedNumber value={Number(ethBal) / 1e18} decimals={3} format={(n) => `${n.toLocaleString("ko-KR", { maximumFractionDigits: 3 })} mETH`} />
+                </span>
               </button>
               <button
                 type="button"
@@ -381,10 +408,13 @@ export default function EarnPage() {
                 className={fill}
               >
                 {t("출금 가능", "Withdrawable")}{" "}
-                <span className="text-white/70">{ethTrim(maxWithdrawColl)} mETH</span>
+                <span className="text-white/70">
+                  <AnimatedNumber value={Number(maxWithdrawColl) / 1e18} decimals={3} format={(n) => `${n.toLocaleString("ko-KR", { maximumFractionDigits: 3 })} mETH`} />
+                </span>
               </button>
               <span className="tabular-nums text-white/30">
-                {t("예치 담보", "Locked")} {ethTrim(myColl)} mETH
+                {t("예치 담보", "Locked")}{" "}
+                <AnimatedNumber value={Number(myColl) / 1e18} decimals={3} format={(n) => `${n.toLocaleString("ko-KR", { maximumFractionDigits: 3 })} mETH`} />
               </span>
             </div>
             <p className="mt-1.5 text-[11px] leading-relaxed text-white/30">
@@ -409,22 +439,26 @@ export default function EarnPage() {
             <div className="mt-4 flex gap-2">
               <button
                 disabled={!!busy || !me || Number(collAmt) <= 0}
-                onClick={() =>
-                  run("coll", async () => {
+                onClick={async () => {
+                  const ok = await run("coll", async () => {
                     const amt = parseUnits(collAmt || "0", 18);
                     await ensureAllowance(METH_ADDRESS, mockKrwAbi, amt);
                     return send("depositCollateral", [amt]);
-                  })
-                }
+                  });
+                  if (ok) setCollAmt("");
+                }}
                 className={primary}
               >
                 {busy === "coll" ? t("예치 중", "…") : t("담보 예치", "Deposit")}
               </button>
               <button
-                disabled={!!busy || myColl === 0n}
-                onClick={() =>
-                  run("collw", () => send("withdrawCollateral", [parseUnits(collAmt || "0", 18)]))
-                }
+                disabled={!!busy || myColl === 0n || Number(collAmt) <= 0}
+                onClick={async () => {
+                  const ok = await run("collw", () =>
+                    send("withdrawCollateral", [parseUnits(collAmt || "0", 18)])
+                  );
+                  if (ok) setCollAmt("");
+                }}
                 className={ghost}
               >
                 {busy === "collw" ? t("출금 중", "…") : t("담보 출금", "Withdraw")}
@@ -437,7 +471,7 @@ export default function EarnPage() {
             <div className="flex items-center justify-between">
               <p className={label}>{t("대출 / 상환 (Borrow / Repay)", "Borrow / Repay")}</p>
               <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-[10px] font-semibold text-white/50 tabular-nums">
-                {borrowApy.toFixed(2)}% APY
+                <AnimatedNumber value={borrowApy} decimals={2} format={(n) => `${n.toFixed(2)}% APY`} />
               </span>
             </div>
             {/* 클릭하면 입력창에 채워짐 (대출=대출가능, 상환=상환가능) */}
@@ -449,7 +483,10 @@ export default function EarnPage() {
                   onClick={() => setBorrowAmt(krwInt(borrowable))}
                   className={fill}
                 >
-                  {t("대출 가능", "Available")} <span className="text-white/70">{fmtKRW(borrowable)}</span>
+                  {t("대출 가능", "Available")}{" "}
+                  <span className="text-white/70">
+                    <AnimatedNumber value={krwNum(borrowable)} format={won} />
+                  </span>
                 </button>
                 <InfoTip
                   text={t(
@@ -465,7 +502,10 @@ export default function EarnPage() {
                   onClick={() => setBorrowAmt(krwInt(repayable))}
                   className={fill}
                 >
-                  {t("상환 가능", "Repayable")} <span className="text-amber-300">{fmtKRW(repayable)}</span>
+                  {t("상환 가능", "Repayable")}{" "}
+                  <span className="text-amber-300">
+                    <AnimatedNumber value={krwNum(repayable)} format={won} />
+                  </span>
                 </button>
               )}
             </div>
@@ -483,7 +523,9 @@ export default function EarnPage() {
               {myDebt > 0n && (
                 <>
                   {t("현재 부채", "Debt")}{" "}
-                  <span className="text-amber-300 tabular-nums">{fmtKRW(myDebt)}</span>
+                  <span className="text-amber-300 tabular-nums">
+                    <AnimatedNumber value={krwNum(myDebt)} format={won} />
+                  </span>
                   {repayable < myDebt &&
                     t(
                       " · 지갑 잔액이 부족해 일부만 상환됩니다.",
@@ -547,20 +589,26 @@ export default function EarnPage() {
               <div className="flex gap-2">
                 <button
                   disabled={!!busy || !me || Number(borrowAmt) <= 0}
-                  onClick={() => run("borrow", () => send("borrow", [parseUnits(borrowAmt || "0", 18)]))}
+                  onClick={async () => {
+                    const ok = await run("borrow", () =>
+                      send("borrow", [parseUnits(borrowAmt || "0", 18)])
+                    );
+                    if (ok) setBorrowAmt("");
+                  }}
                   className={primary}
                 >
                   {busy === "borrow" ? t("대출 중", "Borrowing") : t("대출", "Borrow")}
                 </button>
                 <button
                   disabled={!!busy || myDebt === 0n || Number(borrowAmt) <= 0}
-                  onClick={() =>
-                    run("repay", async () => {
+                  onClick={async () => {
+                    const ok = await run("repay", async () => {
                       const amt = parseUnits(borrowAmt || "0", 18);
                       await ensureAllowance(MOCKKRW_ADDRESS, mockKrwAbi, amt);
                       return send("repay", [amt]);
-                    })
-                  }
+                    });
+                    if (ok) setBorrowAmt("");
+                  }}
                   className={ghost}
                 >
                   {busy === "repay" ? t("상환 중", "…") : t("상환", "Repay")}

@@ -41,27 +41,32 @@ export function FadeUp({
   );
 }
 
-/** 값이 바뀔 때 스프링으로 굴러가는 숫자 */
+/** 값이 바뀔 때 스프링으로 굴러가는 숫자 (증가·감소 모두 애니메이션).
+ *  decimals>0 이면 소수점 자리까지 부드럽게 굴린다 (APY·Health Factor 등). */
 export function AnimatedNumber({
   value,
   format = (n) => n.toLocaleString("ko-KR"),
+  decimals = 0,
 }: {
   value: number;
   format?: (n: number) => string;
+  decimals?: number;
 }) {
-  const spring = useSpring(value, { stiffness: 90, damping: 24 });
-  const display = useTransform(spring, (v) => format(Math.round(v)));
+  const factor = 10 ** decimals;
+  const spring = useSpring(value * factor, { stiffness: 90, damping: 24 });
+  const display = useTransform(spring, (v) => format(Math.round(v) / factor));
   const prev = useRef<number | null>(null);
   useEffect(() => {
+    const scaled = value * factor;
     // 최초 표시값이나 0에서 올라오는 값은 애니메이션 없이 즉시 스냅한다.
     // (데이터 로드/리페치 때 0→수백만 롤업이 '잠깐 줄었다 늘어나는' 착시를 만드는 것을 방지)
     if (prev.current === null || prev.current === 0) {
-      spring.jump(value);
+      spring.jump(scaled);
     } else {
-      spring.set(value);
+      spring.set(scaled);
     }
-    prev.current = value;
-  }, [value, spring]);
+    prev.current = scaled;
+  }, [value, factor, spring]);
   return <motion.span>{display}</motion.span>;
 }
 
