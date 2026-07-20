@@ -189,6 +189,42 @@ def arrow(s, x1, y1, x2, y2, color=GOLD, w=1.6):
     return cn
 
 
+def line(s, x1, y1, x2, y2, color=GOLD, w=1.6):
+    cn = s.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(x1), Inches(y1), Inches(x2), Inches(y2))
+    cn.line.color.rgb = color; cn.line.width = Pt(w); cn.shadow.inherit = False
+    return cn
+
+
+def _sh(s, shape, x, y, w, h, line_c=GOLD, lw=1.7, fill=None):
+    return rect(s, x, y, w, h, fill=fill, line=line_c, lw=lw, shape=shape)
+
+
+def icon(s, kind, cx, cy, r=0.24, color=GOLD, lw=1.9):
+    """다크+골드 라인 아이콘 세트 (진짜 벡터 도형)."""
+    T = MSO_SHAPE
+    if kind == "house":
+        _sh(s, T.ISOSCELES_TRIANGLE, cx - r, cy - r, 2 * r, 0.95 * r, color, lw)
+        _sh(s, T.RECTANGLE, cx - 0.72 * r, cy - 0.10 * r, 1.44 * r, 1.02 * r, color, lw)
+        _sh(s, T.RECTANGLE, cx - 0.2 * r, cy + 0.36 * r, 0.4 * r, 0.56 * r, color, lw)
+    elif kind == "box":
+        _sh(s, T.CUBE, cx - r, cy - 0.95 * r, 2 * r, 1.9 * r, color, lw)
+    elif kind == "pot":
+        _sh(s, T.CAN, cx - 0.82 * r, cy - r, 1.64 * r, 2 * r, color, lw)
+    elif kind == "money":
+        _sh(s, T.ROUNDED_RECTANGLE, cx - r, cy - 0.6 * r, 2 * r, 1.2 * r, color, lw)
+        _sh(s, T.OVAL, cx - 0.3 * r, cy - 0.3 * r, 0.6 * r, 0.6 * r, color, lw)
+    elif kind == "id":
+        _sh(s, T.ROUNDED_RECTANGLE, cx - r, cy - 0.66 * r, 2 * r, 1.32 * r, color, lw)
+        _sh(s, T.OVAL, cx - 0.74 * r, cy - 0.34 * r, 0.6 * r, 0.6 * r, color, lw)
+        line(s, cx + 0.04 * r, cy - 0.2 * r, cx + 0.74 * r, cy - 0.2 * r, color, 1.4)
+        line(s, cx + 0.04 * r, cy + 0.14 * r, cx + 0.74 * r, cy + 0.14 * r, color, 1.4)
+    elif kind == "phone":
+        _sh(s, T.ROUNDED_RECTANGLE, cx - 0.6 * r, cy - r, 1.2 * r, 2 * r, color, lw)
+        line(s, cx - 0.16 * r, cy + 0.66 * r, cx + 0.16 * r, cy + 0.66 * r, color, 1.6)
+    elif kind == "bolt":
+        _sh(s, T.LIGHTNING_BOLT, cx - 0.62 * r, cy - r, 1.24 * r, 2 * r, line_c=None, lw=lw, fill=color)
+
+
 # ═══════════════════════════════════════════════════════════
 # Slide 1 — 표지
 # ═══════════════════════════════════════════════════════════
@@ -214,13 +250,13 @@ text(s, SW - MX - 4.5, 5.72, 4.5, 0.4, [("ieum-protocol.vercel.app", INK, True, 
 s = slide(); kicker(s, 2, "The Problem"); footer(s)
 headline(s, 1.7, [[("한국인의 목돈은 ", INK), ("'사람 손'", GOLD), ("을", INK)],
                   [("거칠 때 터진다", INK)]], size=42)
-rows = [("🏠", "전세금", "집주인을 거치며", "전세사기", AMBER),
-        ("📦", "이사 잔금", "날짜 하루만 어긋나도", "거래 파탄", AMBER),
-        ("🎏", "곗돈", "계주 먹튀로", "증발", AMBER)]
+rows = [("house", "전세금", "집주인을 거치며", "전세사기", AMBER),
+        ("box", "이사 잔금", "날짜 하루만 어긋나도", "거래 파탄", AMBER),
+        ("pot", "곗돈", "계주 먹튀로", "증발", AMBER)]
 y = 3.55
 for ic, a, mid, bad, col in rows:
     card(s, MX, y, SW - 2 * MX, 0.82)
-    text(s, MX + 0.35, y, 0.9, 0.82, [(ic, INK, False, 26)], anchor=MSO_ANCHOR.MIDDLE)
+    icon(s, ic, MX + 0.72, y + 0.41, r=0.2, color=GOLD)
     text(s, MX + 1.25, y, 3.2, 0.82, [(a, INK, True, 21)], anchor=MSO_ANCHOR.MIDDLE)
     text(s, MX + 4.3, y, 4.2, 0.82, [(mid, MUTE, False, 16)], anchor=MSO_ANCHOR.MIDDLE)
     text(s, SW - MX - 2.9, y, 2.5, 0.82, [("→  ", FAINT, False, 16), (bad, col, True, 19)],
@@ -295,16 +331,16 @@ text(s, MX, 6.35, SW - 2 * MX, 0.4,
 # ═══════════════════════════════════════════════════════════
 s = slide(); kicker(s, 5, "Why GIWA"); footer(s)
 headline(s, 1.6, [[("이음은 ", INK), ("GIWA에서만", GOLD), (" 완성된다", INK)]], size=38)
-cards = [("💵", "KRW 스테이블코인", "mKRW를 실KRW로 교체하는 순간 = 실생활 전세·저축 앱"),
-         ("🪪", "UP.ID", "집주인·세입자 당사자 검증 + 계 완주 온체인 신용이력"),
-         ("📱", "GIWA 월렛", "'내 목돈을 지키는 탭'으로 인앱 탑재"),
-         ("⚡", "1초 블록", "즉시 정산 UX — 기다림 없는 사용자 경험")]
+cards = [("money", "KRW 스테이블코인", "mKRW를 실KRW로 교체하는 순간 = 실생활 전세·저축 앱"),
+         ("id", "UP.ID", "집주인·세입자 당사자 검증 + 계 완주 온체인 신용이력"),
+         ("phone", "GIWA 월렛", "'내 목돈을 지키는 탭'으로 인앱 탑재"),
+         ("bolt", "1초 블록", "즉시 정산 UX — 기다림 없는 사용자 경험")]
 gw = (SW - 2 * MX - 0.4) / 2
 gh = 1.5
 positions = [(MX, 2.7), (MX + gw + 0.4, 2.7), (MX, 2.7 + gh + 0.35), (MX + gw + 0.4, 2.7 + gh + 0.35)]
 for (ic, t, d), (x, y) in zip(cards, positions):
     card(s, x, y, gw, gh)
-    text(s, x + 0.35, y + 0.28, 1, 0.5, [(ic, INK, False, 24)])
+    icon(s, ic, x + 0.62, y + 0.62, r=0.22, color=GOLDSFT)
     text(s, x + 1.15, y + 0.28, gw - 1.4, 0.4, [(t, GOLDSFT, True, 18)])
     text(s, x + 1.15, y + 0.72, gw - 1.4, 0.7, [(d, MUTE, False, 13.5)], spacing=1.15)
 
